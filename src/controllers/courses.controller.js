@@ -66,17 +66,17 @@ export const getCourseById = async (req, res) => {
 
 export const getCoursesByUserId = async (req, res) => {
   try {
-    const { user_id } = req.params;
+    const { ma_nguoi_dung } = req.params;
 
-    if (!user_id || isNaN(parseInt(user_id))) {
+    if (!ma_nguoi_dung || isNaN(parseInt(ma_nguoi_dung))) {
       return res.status(400).json({
         success: false,
-        message: "Invalid user_id",
+        message: "Invalid ma_nguoi_dung",
       });
     }
 
     const courses = await Course.findAll({
-      where: { user_id },
+      where: { ma_nguoi_dung },
       include: [
         {
           model: Chapter,
@@ -116,8 +116,8 @@ export const getCoursesByUserId = async (req, res) => {
 export const getCourseDetail = async (req, res) => {
   try {
     const { course_id } = req.params;
-    const user_id = req.user?.id || req.query.user_id;
-    // bạn có thể lấy user_id từ middleware auth hoặc query string
+    const ma_nguoi_dung = req.user?.id || req.query.ma_nguoi_dung;
+    // bạn có thể lấy ma_nguoi_dung từ middleware auth hoặc query string
 
     if (!course_id) {
       return res.status(400).json({ message: "course_id is required" });
@@ -140,7 +140,7 @@ export const getCourseDetail = async (req, res) => {
             {
               model: UserProgress,
               as: "userProgress",
-              where: user_id ? { user_id } : undefined,
+              where: ma_nguoi_dung ? { ma_nguoi_dung } : undefined,
               required: false
             }
           ],
@@ -216,7 +216,7 @@ export const publishCourse = async (req, res) => {
       });
     }
 
-    if (course.user_id !== userId) {
+    if (course.ma_nguoi_dung !== userId) {
       return res.status(403).json({
         success: false,
         message: "You are not allowed to publish this course",
@@ -226,10 +226,10 @@ export const publishCourse = async (req, res) => {
     // Check điều kiện bắt buộc
     const hasPublishedChapter = course?.chapters?.some((chapter) => chapter.isPublished);
 
-    // if (!course.title || !course.description || !course.imageUrl || !course.category_id || !hasPublishedChapter) {
+    // if (!course.title || !course.mo_ta || !course.imageUrl || !course.category_id || !hasPublishedChapter) {
     //   return res.status(400).json({
     //     success: false,
-    //     message: "Missing required fields (title, description, imageUrl, category_id, or published chapter)",
+    //     message: "Missing required fields (title, mo_ta, imageUrl, category_id, or published chapter)",
     //   });
     // }
 
@@ -269,7 +269,7 @@ export const unPublishCourse = async (req, res) => {
       });
     }
 
-    if (course.user_id !== userId) {
+    if (course.ma_nguoi_dung !== userId) {
       return res.status(403).json({
         success: false,
         message: "You are not allowed to unpublish this course",
@@ -297,7 +297,7 @@ export const unPublishCourse = async (req, res) => {
 export const updateCourseById = async (req, res) => {
   try {
     const { id } = req.params;
-    const { category_id, title, description, imageUrl, price } = req.body;
+    const { category_id, title, mo_ta, imageUrl, price } = req.body;
 
     // tìm course
     const course = await Course.findByPk(id);
@@ -310,7 +310,7 @@ export const updateCourseById = async (req, res) => {
     const updatedCourse = await course.update({
       category_id,
       title,
-      description,
+      mo_ta,
       imageUrl,
       price,
     });
@@ -418,9 +418,9 @@ export const deleteCourseById = async (req, res) => {
 
 export const getCoursesWithProgress = async (req, res) => {
   try {
-    const { user_id, title, category_id } = req.query;
+    const { ma_nguoi_dung, title, category_id } = req.query;
 
-    console.log(user_id, category_id)
+    console.log(ma_nguoi_dung, category_id)
 
     // Build điều kiện WHERE động
     let whereClause = `WHERE c.isPublished = true`;
@@ -437,26 +437,26 @@ export const getCoursesWithProgress = async (req, res) => {
       SELECT 
         c.course_id,
         c.title,
-        c.description,
+        c.mo_ta,
         c.imageUrl,
         c.price,
         c.isPublished,
         c.category_id,
         cat.category_name as category_name,
         p.purchase_id as purchase_id,
-        p.user_id as purchase_user_id,
+        p.ma_nguoi_dung as purchase_ma_nguoi_dung,
         ch.chapter_id,
         ch.isPublished as chapter_isPublished
       FROM courses c
       LEFT JOIN categories cat ON cat.category_id = c.category_id
-      LEFT JOIN purchase p ON p.course_id = c.course_id AND p.user_id = :user_id
+      LEFT JOIN purchase p ON p.course_id = c.course_id AND p.ma_nguoi_dung = :ma_nguoi_dung
       LEFT JOIN chapter ch ON ch.course_id = c.course_id AND ch.isPublished = true
       ${whereClause}
       ORDER BY c.created_at DESC
       `,
       {
         replacements: {
-          user_id: 1,
+          ma_nguoi_dung: 1,
           title: `%${title}%`,
           category_id,
         },
@@ -471,7 +471,7 @@ export const getCoursesWithProgress = async (req, res) => {
         courseMap[row.course_id] = {
           course_id: row.course_id,
           title: row.title,
-          description: row.description,
+          mo_ta: row.mo_ta,
           imageUrl: row.imageUrl,
           price: row.price,
           isPublished: row.isPublished,
@@ -480,7 +480,7 @@ export const getCoursesWithProgress = async (req, res) => {
             name: row.category_name,
           },
           purchases: row.purchase_id
-            ? [{ id: row.purchase_id, user_id: row.purchase_user_id }]
+            ? [{ id: row.purchase_id, ma_nguoi_dung: row.purchase_ma_nguoi_dung }]
             : [],
           chapters: [],
         };
@@ -511,13 +511,13 @@ export const getCoursesWithProgress = async (req, res) => {
           `
           SELECT COUNT(*) as completedCount
           FROM user_progress up
-          WHERE up.user_id = :user_id
+          WHERE up.ma_nguoi_dung = :ma_nguoi_dung
           AND up.isCompleted = true
           AND up.chapter_id IN (:chapterIds)
           `,
           {
             replacements: {
-              user_id,
+              ma_nguoi_dung,
               chapterIds: course.chapters.map((c) => c.chapter_id),
             },
             type: sequelize.QueryTypes.SELECT,

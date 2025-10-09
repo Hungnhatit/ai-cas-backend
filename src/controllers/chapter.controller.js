@@ -21,7 +21,7 @@ const { Video } = mux;
 export const createChapter = async (req, res) => {
   try {
     const { id } = req.params; // course_id
-    const { title, description, video_url, isPublished, isFree } = req.body;
+    const { title, mo_ta, video_url, isPublished, isFree } = req.body;
     const userId = req.user?.id; // giả sử bạn gắn user vào req khi login
 
     // 1. Kiểm tra course có tồn tại không
@@ -34,7 +34,7 @@ export const createChapter = async (req, res) => {
     }
 
     // 2. Kiểm tra quyền sở hữu course
-    if (course.user_id !== userId) {
+    if (course.ma_nguoi_dung !== userId) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -52,7 +52,7 @@ export const createChapter = async (req, res) => {
     // 4. Tạo chương mới
     const chapter = await Chapter.create({
       title,
-      description,
+      mo_ta,
       video_url,
       isPublished: isPublished ?? false,
       isFree: isFree ?? false,
@@ -157,7 +157,7 @@ export const getChapterById = async (req, res) => {
  */
 export const updateChapter = async (req, res) => {
   const { course_id, chapter_id } = req.params;
-  const { title, description, position, videoUrl, isPublished } = req.body;
+  const { title, mo_ta, position, videoUrl, isPublished } = req.body;
 
   try {
     const chapter = await Chapter.findOne({
@@ -173,7 +173,7 @@ export const updateChapter = async (req, res) => {
 
     // update fields
     chapter.title = title ?? chapter.title;
-    chapter.description = description ?? chapter.description;
+    chapter.mo_ta = mo_ta ?? chapter.mo_ta;
     chapter.position = position ?? chapter.position;
     chapter.video_url = videoUrl ?? chapter.video_url;
     chapter.isPublished = isPublished ?? chapter.isPublished;
@@ -303,7 +303,7 @@ export const publishChapter = async (req, res) => {
       });
     }
 
-    if (course.user_id !== userId) {
+    if (course.ma_nguoi_dung !== userId) {
       return res.status(401).json({
         success: false,
         message: "Unauthorized",
@@ -331,7 +331,7 @@ export const publishChapter = async (req, res) => {
     });
 
     // kiểm tra đủ dữ liệu trước khi publish
-    if (!muxData || !chapter.title || !chapter.description || !chapter.video_url) {
+    if (!muxData || !chapter.title || !chapter.mo_ta || !chapter.video_url) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields to publish chapter",
@@ -372,7 +372,7 @@ export const unPublishChapter = async (req, res) => {
     }
 
     // kiểm tra quyền sở hữu
-    if (course.user_id !== userId) {
+    if (course.ma_nguoi_dung !== userId) {
       return res.status(403).json({ success: false, message: "Forbidden" });
     }
 

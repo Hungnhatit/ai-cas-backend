@@ -1,14 +1,16 @@
 import { pool } from "../config/database.js";
+import QuizAssignment from "../model/quiz/quiz-assignment.model.js";
 import QuizAttempt from "../model/quiz/quiz-attempt.model.js";
 import QuizQuestion from "../model/quiz/quiz-question.model.js";
 import Quiz from "../model/quiz/quiz.model.js";
+import Student from "../model/student/student.model.js";
 
 /**
  * Get quiz question
  */
 export const getQuestions = async (req, res) => {
   try {
-    const [rows] = await pool.promise().query("SELECT * FROM questions");
+    const [rows] = await pool.promise().query("SELECT * FROM cau_hoi_trac_nghiem");
     return res.status(200).json({
       success: true,
       data: rows
@@ -24,46 +26,46 @@ export const getQuestions = async (req, res) => {
  */
 export const createQuiz = async (req, res) => {
   const transaction = await Quiz.sequelize.transaction();
-  const instructor_id = req.user.user_id;
+  const ma_giang_vien = req.user.ma_nguoi_dung;
   console.log(req)
   try {
     const {
-      title,
-      course,
-      description,
-      duration,
-      totalPoints,
-      dueDate,
-      status,
-      attempts,
-      questions = [],
+      tieu_de,
+      khoa_hoc,
+      mo_ta,
+      thoi_luong,
+      tong_diem,
+      han_nop,
+      trang_thai,
+      so_lan_lam,
+      cau_hoi = [],
     } = req.body;
 
 
     // 1. Tạo quiz
     const quiz = await Quiz.create(
       {
-        title,
-        course,
-        description,
-        duration,
-        totalPoints,
-        dueDate,
-        status,
-        attempts,
-        instructor_id: instructor_id
+        tieu_de,
+        khoa_hoc,
+        mo_ta,
+        thoi_luong,
+        tong_diem,
+        han_nop,
+        trang_thai,
+        so_lan_lam,
+        ma_giang_vien: ma_giang_vien
       },
       { transaction }
     );
 
     // 2. Tạo questions (nếu có)
-    if (questions.length > 0) {
-      const formattedQuestions = questions.map((q) => ({
-        quiz_id: quiz.quiz_id,
-        question: q.question,
-        type: q.type,
-        options: q.options || [],
-        correctAnswer: q.correctAnswer,
+    if (cau_hoi.length > 0) {
+      const formattedQuestions = cau_hoi.map((q) => ({
+        ma_kiem_tra: quiz.ma_kiem_tra,
+        cau_hoi: q.cau_hoi,
+        loai: q.loai,
+        lua_chon: q.lua_chon || [],
+        dap_an_dung: q.dap_an_dung,
         points: q.points,
       }));
 
@@ -72,7 +74,7 @@ export const createQuiz = async (req, res) => {
 
     await transaction.commit();
 
-    const quizWithQuestions = await Quiz.findByPk(quiz.quiz_id, {
+    const quizWithQuestions = await Quiz.findByPk(quiz.ma_kiem_tra, {
       include: [{ model: QuizQuestion, as: "quiz_questions" }],
     });
 
@@ -83,7 +85,7 @@ export const createQuiz = async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error("Error creating quiz:", error);
-    res.status(500).json({ error: "Failed to create quiz" });
+    res.status(500).json({ error: `Failed to create quiz: ${error}` });
   }
 };
 
@@ -92,14 +94,14 @@ export const createQuiz = async (req, res) => {
  */
 export const publishQuiz = async (req, res) => {
   const transaction = await Quiz.sequelize.transaction();
-  const { quiz_id } = req.params;
-  const instructor_id = req.user.user_id
+  const { ma_kiem_tra } = req.params;
+  const ma_giang_vien = req.user.ma_nguoi_dung
 
   try {
-    const { title, course, description, duration, totalPoints, dueDate, attempts, questions = [], } = req.body;
+    const { tieu_de, khoa_hoc, mo_ta, thoi_luong, totalPoints, dueDate, so_lan_lam, questions = [], } = req.body;
 
     const quiz = await Quiz.findOne({
-      where: { quiz_id, instructor_id },
+      where: { ma_kiem_tra, ma_giang_vien },
       transaction
     });
 
@@ -108,27 +110,27 @@ export const publishQuiz = async (req, res) => {
       return res.status(404).json({ error: 'Quiz not found' });
     }
 
-    if (quiz.status !== "draft") {
+    if (quiz.trang_thai !== "draft") {
       await transaction.rollback();
       return res.status(400).json({ error: "Only draft quizzes can be published" });
     }
 
     await quiz.update({
-      title, course, description, duration, totalPoints, dueDate, attempts, status: "active",
+      tieu_de, khoa_hoc, mo_ta, thoi_luong, totalPoints, dueDate, so_lan_lam, trang_thai: "active",
     }, { transaction });
 
     // 3. Xử lý questions (nếu có gửi kèm)
     if (questions.length > 0) {
       // Xóa question cũ
-      await QuizQuestion.destroy({ where: { quiz_id: quiz.quiz_id }, transaction });
+      await QuizQuestion.destroy({ where: { ma_kiem_tra: quiz.ma_kiem_tra }, transaction });
 
       // Tạo lại question mới
       const formattedQuestions = questions.map((q) => ({
-        quiz_id: quiz.quiz_id,
-        question: q.question,
-        type: q.type,
-        options: q.options || [],
-        correctAnswer: q.correctAnswer,
+        ma_kiem_tra: quiz.ma_kiem_tra,
+        cau_hoi: q.cau_hoi,
+        loai: q.loai,
+        lua_chon: q.lua_chon || [],
+        dap_an_dung: q.dap_an_dung,
         points: q.points,
       }));
 
@@ -138,7 +140,7 @@ export const publishQuiz = async (req, res) => {
     await transaction.commit();
 
     // 4. Lấy quiz kèm questions sau khi publish
-    const publishedQuiz = await Quiz.findByPk(quiz.quiz_id, {
+    const publishedQuiz = await Quiz.findByPk(quiz.ma_kiem_tra, {
       include: [{ model: QuizQuestion, as: "quiz_questions" }],
     });
 
@@ -158,12 +160,12 @@ export const publishQuiz = async (req, res) => {
  */
 export const getQuizById = async (req, res) => {
   try {
-    const { quiz_id } = req.params;
+    const { ma_kiem_tra } = req.params;
 
-    const quiz = await Quiz.findByPk(quiz_id, {
+    const quiz = await Quiz.findByPk(ma_kiem_tra, {
       include: [
         { model: QuizQuestion, as: 'quiz_questions' },
-        { model: QuizAttempt, as: 'attempts_list' }
+        { model: QuizAttempt, as: 'so_lan_lam_list' }
       ],
     });
 
@@ -193,14 +195,14 @@ export const getQuizById = async (req, res) => {
  */
 export const getQuizByInstructorId = async (req, res) => {
   try {
-    const instructor_id = req.user.user_id;
+    const ma_giang_vien = req.user.ma_nguoi_dung;
 
     const quizzes = await Quiz.findAll({
-      where: { instructor_id },
+      where: { ma_giang_vien },
       include: [
-        { model: QuizQuestion, as: 'quiz_questions' }
+        { model: QuizQuestion, as: 'cau_hoi_trac_nghiem' }
       ],
-      order: [['createdAt', 'DESC']] // get the newest quizzes
+      order: [['ngay_tao', 'DESC']] // get the newest quizzes
     });
 
     if (!quizzes || quizzes.length === 0) {
@@ -216,6 +218,7 @@ export const getQuizByInstructorId = async (req, res) => {
       quizzes
     })
   } catch (error) {
+    console.log(error);
     res.status(404).json({
       success: false,
       message: `Error when fetching quiz: ${error}`
@@ -228,11 +231,11 @@ export const getQuizByInstructorId = async (req, res) => {
  */
 export const getStudentQuizResult = async (req, res) => {
   try {
-    const { quiz_id, student_id } = req.params;
+    const { ma_kiem_tra, ma_hoc_vien } = req.params;
     const quizzes = await QuizAttempt.findAll({
       where: {
-        quiz_id: quiz_id,
-        student_id: student_id
+        ma_kiem_tra: ma_kiem_tra,
+        ma_hoc_vien: ma_hoc_vien
       },
       order: [["createdAt", "DESC"]],
     });
@@ -251,15 +254,15 @@ export const getStudentQuizResult = async (req, res) => {
  */
 export const updateQuiz = async (req, res) => {
   const transaction = await Quiz.sequelize.transaction();
-  const { quiz_id } = req.params;
-  const instructor_id = req.user.user_id;
+  const { ma_kiem_tra } = req.params;
+  const ma_giang_vien = req.user.ma_nguoi_dung;
 
   try {
-    const { title, course, description, duration, totalPoints, dueDate, attempts, status, questions = [] } = req.body;
+    const { tieu_de, khoa_hoc, mo_ta, thoi_luong, totalPoints, dueDate, so_lan_lam, trang_thai, questions = [] } = req.body;
 
     // check quiz existing
     const quiz = await Quiz.findOne({
-      where: { quiz_id, instructor_id },
+      where: { ma_kiem_tra, ma_giang_vien },
       transaction
     });
 
@@ -268,19 +271,19 @@ export const updateQuiz = async (req, res) => {
       return res.status(404).json({ error: "Quiz not found" });
     }
 
-    await quiz.update({ title, course, description, duration, totalPoints, dueDate, attempts, status }, { transaction });
+    await quiz.update({ tieu_de, khoa_hoc, mo_ta, thoi_luong, totalPoints, dueDate, so_lan_lam, trang_thai }, { transaction });
 
     if (questions.length > 0) {
       // Xóa question cũ
-      await QuizQuestion.destroy({ where: { quiz_id: quiz.quiz_id }, transaction });
+      await QuizQuestion.destroy({ where: { ma_kiem_tra: quiz.ma_kiem_tra }, transaction });
 
       // Tạo lại question mới
       const formattedQuestions = questions.map((q) => ({
-        quiz_id: quiz.quiz_id,
-        question: q.question,
-        type: q.type,
-        options: q.options || [],
-        correctAnswer: q.correctAnswer,
+        ma_kiem_tra: quiz.ma_kiem_tra,
+        cau_hoi: q.cau_hoi,
+        loai: q.loai,
+        lua_chon: q.lua_chon || [],
+        dap_an_dung: q.dap_an_dung,
         points: q.points,
       }));
 
@@ -290,7 +293,7 @@ export const updateQuiz = async (req, res) => {
     await transaction.commit();
 
     // 4. Lấy quiz sau khi update
-    const updatedQuiz = await Quiz.findByPk(quiz.quiz_id, {
+    const updatedQuiz = await Quiz.findByPk(quiz.ma_kiem_tra, {
       include: [{ model: QuizQuestion, as: "quiz_questions" }],
     });
 
@@ -303,17 +306,15 @@ export const updateQuiz = async (req, res) => {
   }
 }
 
-
-
 /**
  * Delete quiz: soft delete and force delete
  */
 export const deleteQuiz = async (req, res) => {
-  const { quiz_id } = req.params;
+  const { ma_kiem_tra } = req.params;
   const forceDelete = req.query.force === 'true';
 
   try {
-    const quiz = await Quiz.findByPk(quiz_id);
+    const quiz = await Quiz.findByPk(ma_kiem_tra);
     if (!quiz) {
       return res.status(404).json({
         success: false,
@@ -322,7 +323,7 @@ export const deleteQuiz = async (req, res) => {
     }
 
     if (!forceDelete) {
-      quiz.status = 'archived';
+      quiz.trang_thai = 'archived';
       await quiz.save();
 
       return res.status(200).json({
@@ -350,9 +351,9 @@ export const deleteQuiz = async (req, res) => {
  */
 export const restoreQuiz = async (req, res) => {
   try {
-    const { quiz_id } = req.params;
+    const { ma_kiem_tra } = req.params;
 
-    const quiz = await Quiz.findOne({ where: { quiz_id } });
+    const quiz = await Quiz.findOne({ where: { ma_kiem_tra } });
 
     if (!quiz) {
       return res.status(404).json({
@@ -361,14 +362,14 @@ export const restoreQuiz = async (req, res) => {
       });
     }
 
-    if (quiz.status !== "archived") {
+    if (quiz.trang_thai !== "archived") {
       return res.status(400).json({
         success: false,
         message: "Quiz is not archived, cannot restore",
       });
     }
 
-    await quiz.update({ status: "draft" });
+    await quiz.update({ trang_thai: "draft" });
 
     return res.status(200).json({
       success: true,
@@ -381,6 +382,115 @@ export const restoreQuiz = async (req, res) => {
       success: false,
       message: "Failed to restore quiz",
       error: error.message,
+    });
+  }
+}
+
+/**
+ * Set quiz che_do_xem
+ */
+export const setQuizche_do_xem = async (req, res) => {
+  const { ma_kiem_tra } = req.params;
+  const { ma_giang_vien } = req.user.ma_nguoi_dung;
+  const { che_do_xem } = req.body;
+
+  try {
+    if (!['public', 'private', 'assigned'].include(che_do_xem)) {
+      return res.status(400).json({
+        error: 'Invalid che_do_xem value!'
+      });
+    }
+
+    const quiz = await Quiz.findOne({
+      where: { ma_kiem_tra, ma_giang_vien }
+    });
+    if (!quiz) {
+      return res.status(404).json({
+        message: 'Quiz not found'
+      });
+    }
+
+    await quiz.update(che_do_xem);
+
+    return res.status(200).json({
+      succe: true,
+      message: `Quiz che_do_xem updated to ${che_do_xem}`,
+      data: quiz
+    });
+  } catch (error) {
+    console.error(`Error setting quiz che_do_xem: ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to update quiz che_do_xem',
+      error: error.message
+    });
+  }
+}
+
+
+/**
+ * Assign quiz to one or more students
+ */
+export const assignQuiz = async (req, res) => {
+  const { ma_kiem_tra } = req.params;
+  const ma_giang_vien = req.user.ma_nguoi_dung;
+  const { ma_hoc_viens } = req.body;
+
+  if (!Array.isArray(ma_hoc_viens) || ma_hoc_viens.length === 0) {
+    return res.status(400).json({
+      error: 'ma_hoc_viens must be a non-empty array'
+    });
+  }
+
+  const transaction = await Quiz.sequelize.transaction();
+
+  try {
+    const quiz = await Quiz.findOne({
+      where: { ma_kiem_tra, ma_giang_vien }
+    });
+
+    if (!quiz) {
+      return res.status(404).json({ error: 'Quiz not found' });
+    }
+
+    const students = await Student.findAll({
+      where: { ma_hoc_vien: ma_hoc_viens }
+    });
+
+    console.log(ma_hoc_viens)
+
+    await QuizAssignment.destroy({
+      where: { ma_kiem_tra, ma_hoc_vien: ma_hoc_viens },
+      transaction
+    });
+
+    const assignments = ma_hoc_viens.map((ma_hoc_vien) => ({
+      ma_kiem_tra,
+      ma_hoc_vien,
+      assigned_by: ma_giang_vien,
+      assigned_at: new Date()
+    }));
+
+    await QuizAssignment.bulkCreate(assignments, { transaction });
+
+    if (quiz.che_do_xem !== 'assigned') {
+      await quiz.update({ che_do_xem: 'assigned' }, { transaction });
+    }
+
+    await transaction.commit();
+
+    return res.status(201).json({
+      success: true,
+      message: 'Quiz assign successfully',
+      data: assignments
+    });
+  } catch (error) {
+    await transaction.rollback();
+    console.log(`Error assigning quiz: ${error}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to assign quiz',
+      error: error.message
     });
   }
 }

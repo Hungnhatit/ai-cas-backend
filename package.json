@@ -11,7 +11,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
+  "mo_ta": "",
   "dependencies": {
     "@mux/mux-node": "^12.7.0",
     "bcrypt": "^6.0.0",

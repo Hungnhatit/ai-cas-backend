@@ -7,7 +7,7 @@ import { createChapter, deleteChapter, getChapterById, publishChapter, reorderCh
 const router = express.Router();
 
 router.get('/', getCourses);
-router.get('/get-course-by-user/:user_id', getCoursesByUserId);
+router.get('/get-course-by-user/:ma_nguoi_dung', getCoursesByUserId);
 router.get('/course-detail/:course_id', getCourseDetail);
 router.get('/detail/:id', getCourseById);
 

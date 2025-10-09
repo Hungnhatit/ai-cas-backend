@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
 
 const Test = sequelize.define('Test', {
-  test_id: {
+  ma_kiem_tra: {
     type: DataTypes.INTEGER.UNSIGNED,
     autoIncrement: true,
     primaryKey: true,
@@ -11,7 +11,7 @@ const Test = sequelize.define('Test', {
     type: DataTypes.TEXT,
     allowNull: false,
   },
-  description: {
+  mo_ta: {
     type: DataTypes.TEXT,
     allowNull: false,
   },

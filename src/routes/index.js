@@ -6,6 +6,11 @@ import quizRoutes from './quiz.route.js';
 import chapterRoutes from './chapter.route.js';
 import userProgressRoutes from './user-progress.route.js';
 import attemptRoutes from './attempt.route.js';
+import studentRoutes from './student.route.js';
+import assignmentRoutes from './assignment.route.js';
+import fileRoutes from './file.route.js';
+import testRoutes from './test.route.js';
+import testAttemptRoutes from './test-attempt.route.js';
 
 const router = express.Router();
 
@@ -16,8 +21,15 @@ router.use('/quizzes', quizRoutes);
 router.use('/chapter', chapterRoutes);
 router.use('/progress', userProgressRoutes);
 router.use('/attempt', attemptRoutes);
+router.use('/student', studentRoutes);
+router.use('/assignment', assignmentRoutes);
+router.use('/file', fileRoutes);
 
-// quiz
+/**
+ * Test routes
+ */
+router.use('/test', testRoutes);
+router.use('/test-attempt', testAttemptRoutes);
 
 
 export default router;

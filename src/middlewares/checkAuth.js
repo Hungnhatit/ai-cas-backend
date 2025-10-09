@@ -8,7 +8,7 @@ export const authenticate = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET_KEY);
-    req.user = decoded; // { user_id, email, type }
+    req.user = decoded; // { ma_nguoi_dung, email, type }
     next();
   } catch (err) {
     return res.status(401).json({ message: "Invalid token" });

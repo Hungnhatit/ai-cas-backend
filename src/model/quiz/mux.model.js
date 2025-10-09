@@ -1,58 +1,61 @@
 import { DataTypes } from "sequelize";
-import Chapter from "./chapter.model.js";
 import { sequelize } from "../../config/database.js";
+import Chapter from "./chapter.model.js";
 
 const MuxData = sequelize.define(
   "MuxData",
   {
-    muxdata_id: {
+    ma_mux: {                                // muxdata_id
       type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
-    asset_id: {
+    ma_tai_san: {                            // asset_id
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    playback_id: {
+    ma_phat_lai: {                           // playback_id
       type: DataTypes.STRING(255),
       allowNull: false,
     },
-    chapter_id: {
+    ma_chuong: {                             // chapter_id
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
+      references: {
+        model: Chapter,
+        key: "ma_chuong",
+      },
+      onDelete: "CASCADE",
     },
-    created_at: {
+    ngay_tao: {                              // created_at
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
-    updated_at: {
+    ngay_cap_nhat: {                         // updated_at
       type: DataTypes.DATE,
       allowNull: false,
       defaultValue: DataTypes.NOW,
     },
   },
   {
-    tableName: "mux_data",
-    timestamps: true, // Sequelize sẽ tự động map createdAt/updatedAt
-    createdAt: "created_at", // map sang cột created_at
-    updatedAt: "updated_at", // map sang cột updated_at
+    tableName: "du_lieu_mux",
+    timestamps: true,              // Cho phép Sequelize tự quản lý
+    createdAt: "ngay_tao",         // ánh xạ sang cột "ngay_tao"
+    updatedAt: "ngay_cap_nhat",    // ánh xạ sang cột "ngay_cap_nhat"
   }
 );
 
-// Quan hệ với bảng Chapter
-// import Chapter từ model chapter của bạn
-// (nếu file model chapter là models/chapter.js)
-
+// // Associations
 // Chapter.hasOne(MuxData, {
-//   foreignKey: "chapter_id",
-//   as: "muxData",
+//   foreignKey: "ma_chuong",
+//   as: "du_lieu_mux",
+//   onDelete: "CASCADE",
 // });
 
 // MuxData.belongsTo(Chapter, {
-//   foreignKey: "chapter_id",
-//   as: "chapter",
+//   foreignKey: "ma_chuong",
+//   as: "chuong",
 //   onDelete: "CASCADE",
 // });
 

@@ -1,40 +1,49 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
 
-const QuizQuestion = sequelize.define("QuizQuestion", {
-  quizQuestion_id: {
+const CauHoiTracNghiem = sequelize.define("CauHoiTracNghiem", {
+  ma_cau_hoi_tn: {
     type: DataTypes.INTEGER.UNSIGNED,
     autoIncrement: true,
     primaryKey: true,
   },
-  question: {
+  ma_bai_trac_nghiem: {
+    type: DataTypes.INTEGER.UNSIGNED,
+    allowNull: false,
+  },
+  cau_hoi: {
     type: DataTypes.TEXT,
     allowNull: false,
   },
-  type: {
-    type: DataTypes.ENUM("multiple-choice", "true-false", "short-answer"),
+  loai: {
+    type: DataTypes.ENUM("trac_nghiem", "dung_sai", "tra_loi_ngan"),
     allowNull: false,
   },
-  options: {
+  lua_chon: {
     type: DataTypes.JSON,
     allowNull: true,
   },
-  correctAnswer: {
+  dap_an_dung: {
     type: DataTypes.STRING,
     allowNull: false,
-    field: "correct_answer",
   },
-  points: {
+  diem: {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
+  ngay_tao: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  ngay_cap_nhat: {
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
 }, {
-  tableName: "quiz_questions",
-  timestamps: true,
+  tableName: "cau_hoi_trac_nghiem",
+  timestamps: false, // Vì bạn đã có 'ngay_tao' và 'ngay_cap_nhat' rồi
 });
 
 // Associations
-// Quiz.hasMany(QuizQuestion, { foreignKey: "quiz_id" });
-// QuizQuestion.belongsTo(Quiz, { foreignKey: "quiz_id" });
-
-export default QuizQuestion;
+// (sẽ được định nghĩa ở file associations.js)
+export default CauHoiTracNghiem;

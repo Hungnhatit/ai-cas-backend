@@ -1,81 +1,35 @@
-// src/model/courseProgress.model.js
+// src/models/userProgress.model.js
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/database.js";
-import Course from "./course.model.js"; // Nếu muốn FK
 
-// Bảng chính: CourseProgress
-const CourseProgress = sequelize.define("CourseProgress", {
-  id: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  userId: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  courseId: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: false,
-    references: {
-      model: Course,
-      key: "course_id",
+const UserProgress = sequelize.define(
+  "UserProgress",
+  {
+    ma_tien_do: { // progress_id
+      type: DataTypes.INTEGER.UNSIGNED,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
-  },
-  completed: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  completionDate: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-}, {
-  tableName: "course_progress",
-  timestamps: true,
-  createdAt: "createdAt",
-  updatedAt: "updatedAt",
-});
-
-// Bảng LecturesProgress
-const LecturesProgress = sequelize.define("LecturesProgress", {
-  id: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  courseProgressId: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: false,
-    references: {
-      model: CourseProgress,
-      key: "id",
+    ma_nguoi_dung: { // ma_nguoi_dung
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
     },
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
+    ma_chuong: { // chapter_id
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: false,
+    },
+    da_hoan_thanh: { // completed
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
   },
-  lectureId: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  viewed: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-  },
-  dateViewed: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-}, {
-  tableName: "lectures_progress",
-  timestamps: true,
-  createdAt: "createdAt",
-  updatedAt: "updatedAt",
-});
+  {
+    tableName: "tien_do_nguoi_dung",
+    timestamps: true,
+    createdAt: "ngay_tao",
+    updatedAt: "ngay_cap_nhat",
+  }
+);
 
-// CourseProgress.hasMany(LecturesProgress, { foreignKey: "courseProgressId", as: "lecturesProgress" });
-// LecturesProgress.belongsTo(CourseProgress, { foreignKey: "courseProgressId" });
-
-export { CourseProgress, LecturesProgress };
+export default UserProgress;

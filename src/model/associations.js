@@ -1,117 +1,175 @@
-import Attachment from "./attachment.model.js";
-import Category from "./category.model.js";
-import Course from "./course.model.js";
-import Purchase from "./purchase.model.js";
-import Chapter from "./quiz/chapter.model.js";
-import MuxData from "./quiz/mux.model.js";
-import UserProgress from "./quiz/user-progress.model.js";
-import User from "./auth/user.model.js";
-import Test from "./quiz/test.model.js";
-import Result from "./quiz/result.model.js";
-import Question from './quiz/question.model.js';
-import Answer from './quiz/answer.model.js';
-import Option from './quiz/option.model.js';
-import Quiz from "./quiz/quiz.model.js";
-import QuizQuestion from "./quiz/quiz-question.model.js";
-import QuizAttempt from "./quiz/quiz-attempt.model.js";
+/**
+ * IMPORT MODELS
+ */
+import TepDinhKem from "./attachment.model.js";              // attachment
+import DanhMuc from "./category.model.js";                   // category
+import KhoaHoc from "./course.model.js";                     // course
+import MuaHang from "./purchase.model.js";                   // purchase
+import Chuong from "./quiz/chapter.model.js";                // chapter
+import DuLieuMux from "./quiz/mux.model.js";                 // mux_data
+import TienDoNguoiDung from "./quiz/user-progress.model.js"; // user_progress
+import NguoiDung from "./auth/user.model.js";                // user
+import BaiKiemTra from "./test/test.model.js";
+import KetQua from "./quiz/result.model.js";                 // result
+import CauHoi from './quiz/question.model.js';               // question
+import CauTraLoi from './quiz/answer.model.js';              // answer
+import LuaChon from './quiz/option.model.js';                // option
+import BaiTracNghiem from "./quiz/quiz.model.js";            // quiz
+import CauHoiTracNghiem from "./quiz/quiz-question.model.js";// quiz_question
+import LanLamTracNghiem from "./quiz/quiz-attempt.model.js"; // quiz_attempt
+import GiangVien from "./instructor/instructor.model.js";    // instructor
+import HocVien from "./student/student.model.js";            // student
+import GiaoBaiKiemTra from "./quiz/quiz-assignment.model.js";// quiz_assignment
+import BaiTap from "./assignment/assignment.model.js";        // assignment
+import BaiNop from "./assignment/assignment-submission.model.js"; // assignment_submission
+import KetNoiKiemTra from "./test/test-association.js";       // test_association
+import CauHoiKiemTra from "./test/test-question.model.js";
 
 /**
- * USERS
+ * NGƯỜI DÙNG (USERS)
  */
-User.hasMany(Course, { foreignKey: "user_id", as: "courses" });
-Course.belongsTo(User, { foreignKey: "user_id", as: "instructor" });
+NguoiDung.hasMany(KhoaHoc, { foreignKey: "ma_nguoi_dung", as: "khoa_hoc" }); // ma_nguoi_dung
+KhoaHoc.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "giang_vien" }); // instructor
 
-User.hasMany(Purchase, { foreignKey: "user_id", as: "purchases" });
-Purchase.belongsTo(User, { foreignKey: "user_id", as: "buyer" });
+NguoiDung.hasMany(MuaHang, { foreignKey: "ma_nguoi_dung", as: "mua_hang" }); // ma_nguoi_dung
+MuaHang.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_mua" }); // buyer
 
-User.hasMany(UserProgress, { foreignKey: "user_id", as: "progress" });
-UserProgress.belongsTo(User, { foreignKey: "user_id", as: "user" });
+NguoiDung.hasMany(TienDoNguoiDung, { foreignKey: "ma_nguoi_dung", as: "tien_do" }); // user_progress
+TienDoNguoiDung.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_dung" });
 
-User.hasMany(Result, { foreignKey: "user_id", as: "results" });
-Result.belongsTo(User, { foreignKey: "user_id", as: "user" });
-
-// User.hasOne(StripeCustomer, { foreignKey: "user_id", as: "stripeCustomer" });
-// StripeCustomer.belongsTo(User, { foreignKey: "user_id", as: "user" });
+NguoiDung.hasMany(KetQua, { foreignKey: "ma_nguoi_dung", as: "ket_qua" }); // results
+KetQua.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_dung" });
 
 /**
- * CATEGORIES
+ * DANH MỤC (CATEGORIES)
  */
-Category.hasMany(Course, { foreignKey: "category_id", as: "courses" });
-Course.belongsTo(Category, { foreignKey: "category_id", as: "category" });
+DanhMuc.hasMany(KhoaHoc, { foreignKey: "ma_danh_muc", as: "khoa_hoc" }); // category_id
+KhoaHoc.belongsTo(DanhMuc, { foreignKey: "ma_danh_muc", as: "danh_muc" });
 
 /**
- * COURSES
+ * KHOÁ HỌC (COURSES)
  */
-// COURSES
-Course.hasMany(Chapter, { foreignKey: "course_id", as: "chapters" });
-Chapter.belongsTo(Course, { foreignKey: "course_id", as: "parentCourse" });
+KhoaHoc.hasMany(Chuong, { foreignKey: "ma_khoa_hoc", as: "chuong" }); // chapters
+Chuong.belongsTo(KhoaHoc, { foreignKey: "ma_khoa_hoc", as: "khoa_hoc_cha" }); // parentCourse
 
-Course.hasMany(Purchase, { foreignKey: "course_id", as: "purchases" });
-Purchase.belongsTo(Course, { foreignKey: "course_id", as: "purchasedCourse" });
+KhoaHoc.hasMany(MuaHang, { foreignKey: "ma_khoa_hoc", as: "mua_hang" }); // purchases
+MuaHang.belongsTo(KhoaHoc, { foreignKey: "ma_khoa_hoc", as: "khoa_hoc_da_mua" }); // purchasedCourse
 
-Course.hasMany(Attachment, { foreignKey: "course_id", as: "attachments" });
-Attachment.belongsTo(Course, { foreignKey: "course_id", as: "attachedCourse" });
-
+KhoaHoc.hasMany(TepDinhKem, { foreignKey: "ma_khoa_hoc", as: "tep_dinh_kem" }); // attachments
+TepDinhKem.belongsTo(KhoaHoc, { foreignKey: "ma_khoa_hoc", as: "khoa_hoc_dinh_kem" }); // attachedCourse
 
 /**
- * CHAPTERS
+ * CHƯƠNG (CHAPTERS)
  */
-Chapter.hasMany(UserProgress, { foreignKey: "chapter_id", as: "userProgress" });
-UserProgress.belongsTo(Chapter, { foreignKey: "chapter_id", as: "chapter" });
+Chuong.hasMany(TienDoNguoiDung, { foreignKey: "ma_chuong", as: "tien_do_nguoi_dung" }); // userProgress
+TienDoNguoiDung.belongsTo(Chuong, { foreignKey: "ma_chuong", as: "chuong" });
 
-Chapter.hasOne(MuxData, { foreignKey: "chapter_id", as: "muxData" });
-MuxData.belongsTo(Chapter, { foreignKey: "chapter_id", as: "chapter" });
+Chuong.hasOne(DuLieuMux, { foreignKey: "ma_chuong", as: "du_lieu_mux" }); // muxData
+DuLieuMux.belongsTo(Chuong, { foreignKey: "ma_chuong", as: "chuong" });
 
 /**
- * TESTS
+ * BÀI KIỂM TRA (TESTS)
  */
-Test.hasMany(Question, { foreignKey: "test_id", as: "questions" });
-Question.belongsTo(Test, { foreignKey: "test_id", as: "test" });
+BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi" }); // ma_kiem_tra
+CauHoiKiemTra.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" }); // test
 
-Test.hasMany(Result, { foreignKey: "test_id", as: "results" });
-Result.belongsTo(Test, { foreignKey: "test_id", as: "test" });
+BaiKiemTra.hasMany(KetQua, { foreignKey: "ma_bai_kiem_tra", as: "ket_qua" });
+KetQua.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" });
 
 /**
- * QUESTIONS
+ * CÂU HỎI (QUESTIONS)
  */
-Question.hasMany(Option, { foreignKey: "question_id", as: "options" });
-Option.belongsTo(Question, { foreignKey: "question_id", as: "question" });
+CauHoi.hasMany(LuaChon, { foreignKey: "ma_cau_hoi", as: "lua_chon" }); // options
+LuaChon.belongsTo(CauHoi, { foreignKey: "ma_cau_hoi", as: "cau_hoi" });
 
-Question.hasMany(Answer, { foreignKey: "question_id", as: "answers" });
-Answer.belongsTo(Question, { foreignKey: "question_id", as: "question" });
+CauHoi.hasMany(CauTraLoi, { foreignKey: "ma_cau_hoi", as: "cau_tra_loi" }); // answers
+CauTraLoi.belongsTo(CauHoi, { foreignKey: "ma_cau_hoi", as: "cau_hoi" });
 
 /**
- * RESULTS
+ * KẾT QUẢ (RESULTS)
  */
-Result.hasMany(Answer, { foreignKey: "result_id", as: "answers" });
-Answer.belongsTo(Result, { foreignKey: "result_id", as: "result" });
-
-
-/**
- * QUIZZES
- */
-Quiz.hasMany(QuizQuestion, { foreignKey: "quiz_id", as: 'quiz_questions', onDelete: 'CASCADE' });
-QuizQuestion.belongsTo(Quiz, { foreignKey: "quiz_id"});
+KetQua.hasMany(CauTraLoi, { foreignKey: "ma_ket_qua", as: "cau_tra_loi" }); // answers
+CauTraLoi.belongsTo(KetQua, { foreignKey: "ma_ket_qua", as: "ket_qua" });
 
 /**
- * Attempt
+ * BÀI TRẮC NGHIỆM (QUIZZES)
  */
-Quiz.hasMany(QuizAttempt, { foreignKey: "quiz_id", as: 'attempts_list', onDelete: 'CASCADE' });
-QuizAttempt.belongsTo(Quiz, { foreignKey: "quiz_id" , as: 'quiz'});
+BaiTracNghiem.hasMany(CauHoiTracNghiem, {
+  foreignKey: "ma_bai_trac_nghiem",
+  as: "cau_hoi_trac_nghiem",
+  onDelete: "CASCADE",
+});
+
+CauHoiTracNghiem.belongsTo(BaiTracNghiem, {
+  foreignKey: "ma_bai_trac_nghiem",
+  as: "bai_trac_nghiem",
+});
+
+/**
+ * LẦN LÀM TRẮC NGHIỆM (ATTEMPTS)
+ */
+BaiTracNghiem.hasMany(LanLamTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "lan_lam_trac_nghiem", onDelete: "CASCADE" });
+LanLamTracNghiem.belongsTo(BaiTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "bai_trac_nghiem" });
+
+/**
+ * GIẢNG VIÊN - HỌC VIÊN (INSTRUCTOR - STUDENT)
+ */
+GiangVien.hasMany(HocVien, { foreignKey: "ma_giang_vien", as: "hoc_vien" }); // ma_giang_vien
+HocVien.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
+
+/**
+ * GIẢNG VIÊN - BÀI TRẮC NGHIỆM (INSTRUCTOR - QUIZ)
+ */
+GiangVien.hasMany(BaiTracNghiem, { foreignKey: "ma_giang_vien", as: "bai_trac_nghiem" });
+BaiTracNghiem.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
+
+/**
+ * BÀI TRẮC NGHIỆM - GIAO BÀI KIỂM TRA (QUIZ - QUIZ_ASSIGNMENT)
+ */
+BaiTracNghiem.hasMany(GiaoBaiKiemTra, { foreignKey: "ma_bai_trac_nghiem", as: "giao_bai_kiem_tra" });
+GiaoBaiKiemTra.belongsTo(BaiTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "bai_trac_nghiem" });
+
+/**
+ * HỌC VIÊN - GIAO BÀI KIỂM TRA (STUDENT - QUIZ_ASSIGNMENT)
+ */
+HocVien.hasMany(GiaoBaiKiemTra, { foreignKey: "ma_hoc_vien", as: "bai_kiem_tra_da_giao" });
+GiaoBaiKiemTra.belongsTo(HocVien, { foreignKey: "ma_hoc_vien", as: "hoc_vien" });
+
+/**
+ * BÀI TẬP - KHOÁ HỌC - GIẢNG VIÊN - HỌC VIÊN
+ */
+BaiTap.belongsTo(KhoaHoc, { foreignKey: "ma_khoa_hoc", as: "khoa_hoc" });
+BaiTap.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
+
+/**
+ * HỌC VIÊN - BÀI NỘP (STUDENT - SUBMISSION)
+ */
+HocVien.hasMany(BaiNop, { foreignKey: "ma_hoc_vien", as: "bai_nop" });
+BaiNop.belongsTo(HocVien, { foreignKey: "ma_hoc_vien", as: "hoc_vien" });
+
+/**
+ * BÀI TẬP - BÀI NỘP (ASSIGNMENT - SUBMISSION)
+ */
+BaiTap.hasMany(BaiNop, { foreignKey: "ma_bai_tap", as: "bai_nop" });
+BaiNop.belongsTo(BaiTap, { foreignKey: "ma_bai_tap", as: "bai_tap" });
+
+/**
+ * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)
+ */
+KetNoiKiemTra();
 
 export {
-  User,
-  Category,
-  Course,
-  Chapter,
-  Purchase,
-  UserProgress,
-  Attachment,
-  MuxData,
-  // StripeCustomer,
-  Test,
-  Question,
-  Option,
-  Result,
-  Answer,
+  NguoiDung,
+  DanhMuc,
+  KhoaHoc,
+  Chuong,
+  MuaHang,
+  TienDoNguoiDung,
+  TepDinhKem,
+  DuLieuMux,
+  BaiKiemTra,
+  CauHoi,
+  LuaChon,
+  KetQua,
+  CauTraLoi,
 };

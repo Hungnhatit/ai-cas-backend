@@ -6,7 +6,7 @@ export const deleteAttachment = async (req, res) => {
   try {
     const { course_id, attachment_id } = req.params;
 
-    // Kiểm tra attachment có thuộc course không
+    // check if attachment belongs to course
     const [rows] = await pool
       .promise()
       .query(

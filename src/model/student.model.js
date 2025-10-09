@@ -1,41 +1,71 @@
-// src/model/student.model.js
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/database.js";
-import Course from "./course.model.js";
+import Instructor from "./instructor.model.js"; // nếu có model giảng viên
 
 const Student = sequelize.define("Student", {
-  id: {
+  ma_hoc_vien: {                            // student_id
     type: DataTypes.INTEGER.UNSIGNED,
     autoIncrement: true,
     primaryKey: true,
   },
-  course_id: {
+  ma_giang_vien: {                          // ma_giang_vien
     type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: false,
+    allowNull: true,
     references: {
-      model: Course,
-      key: "course_id",
+      model: Instructor,
+      key: "ma_giang_vien",
     },
-    onDelete: "CASCADE",
+    onDelete: "SET NULL",
   },
-  studentName: {
-    type: DataTypes.STRING,
+  mat_khau: {                               // password
+    type: DataTypes.STRING(255),
     allowNull: false,
   },
-  studentEmail: {
-    type: DataTypes.STRING,
+  ten: {                                    // name
+    type: DataTypes.STRING(100),
     allowNull: false,
   },
-  paidAmount: {
-    type: DataTypes.STRING,
+  email: {                                  // email
+    type: DataTypes.STRING(150),
+    allowNull: false,
+  },
+  anh_dai_dien: {                           // avatar
+    type: DataTypes.STRING(255),
     allowNull: true,
   },
+  khoa_hoc_da_dang_ky: {                   // enrolled_courses_count
+    type: DataTypes.INTEGER.UNSIGNED,
+    allowNull: false,
+    defaultValue: 0,
+  },
+  khoa_hoc_hoan_thanh: {                   // completed_courses_count
+    type: DataTypes.INTEGER.UNSIGNED,
+    allowNull: false,
+    defaultValue: 0,
+  },
+  tien_do: {                               // progress_percentage
+    type: DataTypes.DECIMAL(5, 2),
+    allowNull: false,
+    defaultValue: 0.0,
+  },
+  ngay_tham_gia: {                         // join_date
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: DataTypes.NOW,
+  },
+  ngay_tao: {                              // created_at
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: DataTypes.NOW,
+  },
+  ngay_cap_nhat: {                         // updated_at
+    type: DataTypes.DATE,
+    allowNull: true,
+    defaultValue: DataTypes.NOW,
+  },
 }, {
-  tableName: "students",
-  timestamps: true,
+  tableName: "hoc_vien",
+  timestamps: false, // vì DB đã có cột ngay_tao / ngay_cap_nhat
 });
-
-// Course.hasMany(Student, { foreignKey: "course_id", as: "students" });
-// Student.belongsTo(Course, { foreignKey: "course_id" });
 
 export default Student;

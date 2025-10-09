@@ -7,7 +7,7 @@ import Purchase from "../model/purchase.model.js";
 // Lấy danh sách courses kèm progress
 export const getCourses = async (req, res) => {
   try {
-    const { user_id, title, category_id } = req.query;
+    const { ma_nguoi_dung, title, category_id } = req.query;
 
     const courses = await Course.findAll({
       where: {
@@ -31,7 +31,7 @@ export const getCourses = async (req, res) => {
         {
           model: Purchase,
           as: "purchases",
-          where: { user_id: 1 },
+          where: { ma_nguoi_dung: 1 },
           required: false, // tránh bị loại bỏ course nếu user chưa mua
         },
       ],
@@ -48,7 +48,7 @@ export const getCourses = async (req, res) => {
         }
 
         const progressPercentage = await getProgress(
-          Number(user_id),
+          Number(ma_nguoi_dung),
           c.course_id
         );
 
@@ -66,9 +66,9 @@ export const getCourses = async (req, res) => {
 
 export const getCompletedProgress = async (req, res) => {
   try {
-    const { user_id } = req.params;
+    const { ma_nguoi_dung } = req.params;
 
-    if (!user_id) {
+    if (!ma_nguoi_dung) {
       return res.status(400).json({
         success: false,
         message: "User ID is required",
@@ -77,7 +77,7 @@ export const getCompletedProgress = async (req, res) => {
 
     const completedCount = await UserProgress.count({
       where: {
-        user_id: user_id,
+        ma_nguoi_dung: ma_nguoi_dung,
         isCompleted: true,
       },
     });
@@ -112,7 +112,7 @@ export const getProgress = async (userId, courseId) => {
     // chapters user đã hoàn thành
     const completedChapters = await UserProgress.count({
       where: {
-        user_id: userId,
+        ma_nguoi_dung: userId,
         course_id: courseId,
         isCompleted: true,
       },

@@ -7,7 +7,7 @@ const Purchase = sequelize.define("Purchase", {
     autoIncrement: true,
     primaryKey: true,
   },
-  user_id: {
+  ma_nguoi_dung: {
     type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
   },

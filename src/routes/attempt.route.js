@@ -10,11 +10,11 @@ router.patch('/:attempt_id', submitQuizAnswer);
 // router.patch('/:attempt_id/submit', submitQuizAttempt);
 
 // handle submit answer
-router.post('/:quizAttempt_id/answer', submitQuizAnswer);
+router.post('/:ma_lan_lam_kt/answer', submitQuizAnswer);
 
-router.post('/:quizAttempt_id/submit', submitQuizAttempt);
+router.post('/:ma_lan_lam_kt/submit', submitQuizAttempt);
 
 // get quiz attempt by ID
-router.get('/:quizAttempt_id', getQuizAttemptById);
+router.get('/:ma_lan_lam_kt', getQuizAttemptById);
 
 export default router;

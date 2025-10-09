@@ -10,7 +10,7 @@ const UserProgress = sequelize.define(
       autoIncrement: true,
       primaryKey: true,
     },
-    user_id: {
+    ma_nguoi_dung: {
       type: DataTypes.INTEGER.UNSIGNED,
       allowNull: false,
     },
@@ -33,7 +33,7 @@ const UserProgress = sequelize.define(
   }
 );
 
-// UserProgress.belongsTo(User, { foreignKey: "user_id", as: "user" });
-// User.hasMany(UserProgress, { foreignKey: "user_id", as: "progress" });
+// UserProgress.belongsTo(User, { foreignKey: "ma_nguoi_dung", as: "user" });
+// User.hasMany(UserProgress, { foreignKey: "ma_nguoi_dung", as: "progress" });
 
 export default UserProgress;

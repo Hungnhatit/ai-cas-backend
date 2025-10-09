@@ -7,21 +7,21 @@ import Quiz from "../model/quiz/quiz.model.js";
 
 /**
  * Start quiz attempt
- * Description: start quiz attempt, set status to in-progress
+ * mo_ta: start quiz attempt, set status to in-progress
  */
 export const startQuizAttempt = async (req, res) => {
   try {
-    const { quiz_id, student_id } = req.body;
-    if (!quiz_id || !student_id) {
-      return res.status(400).json({ message: "quiz_id và student_id là bắt buộc" });
+    const { ma_kiem_tra, ma_hoc_vien } = req.body;
+    if (!ma_kiem_tra || !ma_hoc_vien) {
+      return res.status(400).json({ message: "ma_kiem_tra và ma_hoc_vien là bắt buộc" });
     }
 
     const attempt = await QuizAttempt.create({
-      quiz_id: quiz_id,
-      student_id: student_id,
-      start_time: new Date(),
-      end_time: null,
-      status: 'in-progress'
+      ma_kiem_tra: ma_kiem_tra,
+      ma_hoc_vien: ma_hoc_vien,
+      thoi_gian_bat_dau: new Date(),
+      thoi_gian_ket_thuc: null,
+      trang_thai: 'in-progress'
     });
 
     res.status(201).json({
@@ -40,20 +40,20 @@ export const startQuizAttempt = async (req, res) => {
  */
 export const submitQuizAnswer = async (req, res) => {
   try {
-    const { quizAttempt_id } = req.params;
-    const { answers } = req.body; // full object from FE   
+    const { ma_lan_lam_kt } = req.params;
+    const { cau_tra_loi } = req.body; // full object from FE   
 
-    const attempt = await QuizAttempt.findByPk(quizAttempt_id);
+    const attempt = await QuizAttempt.findByPk(ma_lan_lam_kt);
     if (!attempt) return res.status(404).json({ message: "Attempt not found" });
 
     await attempt.update({
-      answers
+      cau_tra_loi
     });
 
-    res.status(200).json({ message: "Answers saved", answers });
+    res.status(200).json({ message: "Answers saved", cau_tra_loi });
   } catch (error) {
     console.error("Error submitting answer:", error);
-    res.status(500).json({ message: "Failed to submit answers" });
+    res.status(500).json({ message: "Failed to submit cau_tra_loi" });
   }
 };
 
@@ -62,13 +62,13 @@ export const submitQuizAnswer = async (req, res) => {
  */
 // export const submitQuizAttempt = async (req, res) => {
 //   try {
-//     const { quizAttempt_id } = req.params;
-//     const attempt = await QuizAttempt.findByPk(quizAttempt_id);
+//     const { ma_lan_lam_kt } = req.params;
+//     const attempt = await QuizAttempt.findByPk(ma_lan_lam_kt);
 
-//     if (!quizAttempt_id) {
+//     if (!ma_lan_lam_kt) {
 //       return res.status(400).json({
 //         message: false,
-//         message: 'quizAttempt_id is required'
+//         message: 'ma_lan_lam_kt is required'
 //       });
 //     }
 
@@ -76,11 +76,11 @@ export const submitQuizAnswer = async (req, res) => {
 //       return res.status(404).json({ message: "Attempt not found" });
 //     }
 
-//     if (attempt.status === 'submitted') {
+//     if (attempt.trang_thai ==='submitted') {
 //       return res.status(400).json({ message: 'Attempt has beens submitted before!' });
 //     }
 
-//     const quiz = await Quiz.findByPk(attempt.quiz_id, {
+//     const quiz = await Quiz.findByPk(attempt.ma_kiem_tra, {
 //       include: [{ model: QuizQuestion, as: "quiz_questions" }],
 //     });
 
@@ -88,8 +88,8 @@ export const submitQuizAnswer = async (req, res) => {
 //       return res.status(404).json({ message: 'Quiz not found' });
 //     }
 
-//     let score = 0;
-//     const rawAnswers = attempt.answers; // "{\"17\":0}"
+//     let diem = 0;
+//     const rawAnswers = attempt.cau_tra_loi; // "{\"17\":0}"
 //     const userAnswers = JSON.parse(rawAnswers); // { "17": 0 }
 
 
@@ -98,21 +98,21 @@ export const submitQuizAnswer = async (req, res) => {
 //       quiz.quiz_questions.forEach((q) => {
 //         const userAnswer = (JSON.parse(userAnswers))?.[q.quizQuestion_id];
 //         if (userAnswer.toString() !== undefined && userAnswer.toString() === q.correctAnswer) {
-//           score += q.points;
+//           diem += q.points;
 //         }
 //       });
 //     }
 
-//     attempt.score = score;
-//     attempt.end_time = new Date();
-//     attempt.status = 'submitted';
+//     attempt.diem = diem;
+//     attempt.thoi_gian_ket_thuc = new Date();
+//     attempt.trang_thai ='submitted';
 
 //     await attempt.save();
 
 //     return res.json({
 //       success: true,
 //       message: 'Quiz has been submitted',
-//       score,
+//       diem,
 //       attempt,
 //     });
 //   } catch (error) {
@@ -123,22 +123,22 @@ export const submitQuizAnswer = async (req, res) => {
 
 export const submitQuizAttempt = async (req, res) => {
   try {
-    const { quizAttempt_id } = req.params;
-    const attempt = await QuizAttempt.findByPk(quizAttempt_id);
+    const { ma_lan_lam_kt } = req.params;
+    const attempt = await QuizAttempt.findByPk(ma_lan_lam_kt);
 
-    if (!quizAttempt_id) {
-      return res.status(400).json({ message: "quizAttempt_id is required" });
+    if (!ma_lan_lam_kt) {
+      return res.status(400).json({ message: "ma_lan_lam_kt is required" });
     }
 
     if (!attempt) {
       return res.status(404).json({ message: "Attempt not found" });
     }
 
-    if (attempt.status === "submitted") {
+    if (attempt.trang_thai === "da_nop") {
       return res.status(400).json({ message: "Attempt has been submitted before!" });
     }
 
-    const quiz = await Quiz.findByPk(attempt.quiz_id, {
+    const quiz = await Quiz.findByPk(attempt.ma_kiem_tra, {
       include: [{ model: QuizQuestion, as: "quiz_questions" }],
     });
 
@@ -146,10 +146,10 @@ export const submitQuizAttempt = async (req, res) => {
       return res.status(404).json({ message: "Quiz not found" });
     }
 
-    let score = 0;
+    let diem = 0;
 
-    // parse answers from DB (string -> object)
-    let userAnswers = JSON.parse(attempt.answers);
+    // parse cau_tra_loi from DB (string -> object)
+    let userAnswers = JSON.parse(attempt.cau_tra_loi);
 
     // scoring
     quiz.quiz_questions.forEach((q) => {
@@ -158,20 +158,20 @@ export const submitQuizAttempt = async (req, res) => {
         userAnswer !== undefined &&
         userAnswer.toString() === q.correctAnswer.toString()
       ) {
-        score += q.points;
+        diem += q.points;
       }
     });
 
-    attempt.score = score;
-    attempt.end_time = new Date();
-    attempt.status = "submitted";
+    attempt.diem = diem;
+    attempt.thoi_gian_ket_thuc = new Date();
+    attempt.trang_thai = diem > 0 ? "completed" : "submitted";
 
     await attempt.save();
 
     return res.json({
       success: true,
       message: "Quiz has been submitted",
-      score,
+      diem,
       attempt,
     });
 
@@ -181,22 +181,21 @@ export const submitQuizAttempt = async (req, res) => {
   }
 };
 
-
 /**
  * Get attempts
  */
 export const getQuizAttempts = async (req, res) => {
   try {
-    const { quiz_id, student_id } = req.query;
+    const { ma_kiem_tra, ma_hoc_vien } = req.query;
 
-    if (!quiz_id || !student_id) {
-      return res.status(400).json({ message: "quiz_id và student_id là bắt buộc" });
+    if (!ma_kiem_tra || !ma_hoc_vien) {
+      return res.status(400).json({ message: "ma_kiem_tra và ma_hoc_vien là bắt buộc" });
     }
 
     const attempts = await QuizAttempt.findAll({
       where: {
-        quiz_id: Number(quiz_id),
-        student_id: Number(student_id),
+        ma_kiem_tra: Number(ma_kiem_tra),
+        ma_hoc_vien: Number(ma_hoc_vien),
       },
     });
 
@@ -212,15 +211,15 @@ export const getQuizAttempts = async (req, res) => {
  */
 export const getQuizAttempt = async (req, res) => {
   try {
-    const { student_id } = req.params;
+    const { ma_hoc_vien } = req.params;
 
-    if (!student_id) {
-      return res.status(400).json({ message: "student_id is required" });
+    if (!ma_hoc_vien) {
+      return res.status(400).json({ message: "ma_hoc_vien is required" });
     }
 
     const attempts = await QuizAttempt.findAll({
       where: {
-        student_id: student_id,
+        ma_hoc_vien: ma_hoc_vien,
       },
     });
 
@@ -236,13 +235,13 @@ export const getQuizAttempt = async (req, res) => {
  */
 export const getQuizAttemptById = async (req, res) => {
   try {
-    const { quizAttempt_id } = req.params;
+    const { ma_lan_lam_kt } = req.params;
 
-    if (!quizAttempt_id) {
-      return res.status(400).json({ message: "quizAttempt_id is required" });
+    if (!ma_lan_lam_kt) {
+      return res.status(400).json({ message: "ma_lan_lam_kt is required" });
     }
 
-    const attempt = await QuizAttempt.findByPk(quizAttempt_id, {
+    const attempt = await QuizAttempt.findByPk(ma_lan_lam_kt, {
       include: [
         {
           model: Quiz,

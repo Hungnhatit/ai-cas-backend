@@ -1,43 +1,51 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
-import Result from "./result.model.js";
-import Question from "./question.model.js";
+import KetQua from "./result.model.js";       // Result model
+import CauHoi from "./question.model.js";       // Question model
 
-const Answer = sequelize.define('Answer', {
-  answer_id: {
+/**
+ * Table: cau_tra_loi
+ * mo_ta: Stores the student's selected answers for each question in a test result.
+ * Old table: quiz_answer
+ */
+const CauTraLoi = sequelize.define("CauTraLoi", {
+  ma_cau_tra_loi: {                 // answer_id (UUID)
     type: DataTypes.INTEGER.UNSIGNED,
+    primaryKey: true,
     allowNull: false,
-    primaryKey: true
   },
-  result_id: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: false,
-    references: {
-      model: Result,
-      key: 'result_id'
-    }
-  },
-  question_id: {
+  ma_ket_qua: {                     // result_id (UUID)
     type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
     references: {
-      model: Question,
-      key: 'question_id'
-    }
+      model: KetQua,
+      key: "ma_ket_qua",
+    },
   },
-  chosen_option: {
-    type: DataTypes.CHAR,
+  ma_cau_hoi: {                     // question_id (UUID)
+    type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
-  }
+    references: {
+      model: CauHoi,
+      key: "ma_cau_hoi",
+    },
+  },
+  lua_chon_chon: {                  // chosen_option (A/B/C/D)
+    type: DataTypes.CHAR(1),
+    allowNull: false,
+  },
+  ngay_tao: {                       // created_at
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
+  ngay_cap_nhat: {                  // updated_at
+    type: DataTypes.DATE,
+    defaultValue: DataTypes.NOW,
+  },
 }, {
-  tableName: 'answers',
-  timestamps: true
+  tableName: "cau_tra_loi",
+  timestamps: false, // Database already manages timestamps
 });
 
-// Answer.belongsTo(Result, { foreignKey: 'result_id', onDelete: 'CASCADE' });
-// Answer.belongsTo(Question, { foreignKey: 'question_id' });
 
-// Result.hasMany(Answer, { foreignKey: 'result_id', onDelete: 'CASCADE' });
-// Question.hasMany(Answer, { foreignKey: 'question_id' });
-
-export default Answer;
+export default CauTraLoi;
