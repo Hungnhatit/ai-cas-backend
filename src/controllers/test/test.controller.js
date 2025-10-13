@@ -1,6 +1,9 @@
 import { sequelize } from '../../config/database.js';
 import CauHoiKiemTra from '../../model/test/test-question.model.js';
 import BaiKiemTra from '../../model/test/test.model.js'
+import LanLamBaiKiemTra from '../../model/test/test-attempt.model.js'
+import Test from '../../model/quiz/test.model.js';
+
 /**
  * Create new test
  */
@@ -81,7 +84,7 @@ export const getTestById = async (req, res) => {
 
     const test = await BaiKiemTra.findByPk(test_id, {
       include: [
-        { model: CauHoiKiemTra, as: 'cau_hoi' },
+        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
       ]
     });
 
@@ -94,7 +97,7 @@ export const getTestById = async (req, res) => {
 
     const parsedTest = {
       ...test.toJSON(),
-      cau_hoi: test.cau_hoi.map((q) => ({
+      cau_hoi: test.cau_hoi_kiem_tra.map((q) => ({
         ...q.toJSON(),
         lua_chon:
           typeof q.lua_chon === "string"
@@ -158,17 +161,108 @@ export const getTestsByInstructorId = async (req, res) => {
       message: "An error occurred while fetching tests by instructor ID.",
       error: error.message,
     });
+  }
+}
+
+/**
+ * Get test result
+ */
+export const getTestResults = async (req, res) => {
+  try {
+    const { test_id, student_id } = req.params;
+
+    const tests = await LanLamBaiKiemTra.findAll({
+      where: {
+        ma_kiem_tra: test_id,
+        ma_hoc_vien: student_id
+      },
+      order: [["ngay_tao", "DESC"]],
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Fetch test result for test_id=${test_id} & student_id=${student_id} successfully!`,
+      data: tests
+    })
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching test results.",
+      error: error.message,
+    });
 
   }
 }
 
 /**
- * Submit test
+ * Update test
  */
-export const submitTest = async (req, res) => {
+export const updateTest = async (req, res) => {
+  const transaction = await BaiKiemTra.sequelize.transaction();
+  const { test_id } = req.params;
+  const ma_giang_vien = req.user.ma_nguoi_dung;
+
   try {
+    const { tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam, trang_thai, cau_hoi = [] } = req.body;
 
+    const test = await BaiKiemTra.findOne({
+      where: { ma_kiem_tra: test_id, ma_giang_vien },
+      transaction
+    });
+
+    if (!test) {
+      await transaction.rollback();
+      return res.status(404).json({
+        success: false,
+        message: "Test not found or you don't have permission to update it.",
+      });
+    }
+
+    await test.update({
+      tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam, trang_thai,
+    }, { transaction });
+
+    if (cau_hoi.length > 0) {
+      await CauHoiKiemTra.destroy({
+        where: { ma_bai_kiem_tra: test.ma_kiem_tra },
+        transaction
+      });
+
+      const formattedQuestions = cau_hoi.map((q) => ({
+        ma_bai_kiem_tra: test.ma_kiem_tra,
+        cau_hoi: q.cau_hoi,
+        loai: q.loai,
+        lua_chon: q.lua_chon || [],
+        dap_an_dung: q.dap_an_dung,
+        diem: q.diem,
+      }));
+
+      await CauHoiKiemTra.bulkCreate(formattedQuestions, { transaction });
+    }
+
+    await transaction.commit();
+
+    // fetch updated test with its questions
+    const updatedTest = await BaiKiemTra.findByPk(test_id, {
+      include: [{ model: CauHoiKiemTra, as: "cau_hoi_kiem_tra" }],
+    });
+
+    // success response
+    return res.status(200).json({
+      success: true,
+      message: "Test updated successfully.",
+      data: updatedTest,
+    });
   } catch (error) {
+    if (transaction) await transaction.rollback();
 
+    console.error("Error updating test:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An unexpected error occurred while updating the test.",
+      error: error.message,
+    });
   }
 }
