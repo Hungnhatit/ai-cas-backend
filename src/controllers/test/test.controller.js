@@ -137,6 +137,9 @@ export const getTestsByInstructorId = async (req, res) => {
 
     const tests = await BaiKiemTra.findAll({
       where: { ma_giang_vien: instructor_id },
+      include: [
+        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
+      ],
       order: [['ngay_tao', 'DESC']]
     });
 
@@ -205,7 +208,7 @@ export const updateTest = async (req, res) => {
   const ma_giang_vien = req.user.ma_nguoi_dung;
 
   try {
-    const { tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam, trang_thai, cau_hoi = [] } = req.body;
+    const { tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam_toi_da, trang_thai, cau_hoi = [] } = req.body;
 
     const test = await BaiKiemTra.findOne({
       where: { ma_kiem_tra: test_id, ma_giang_vien },
@@ -221,7 +224,7 @@ export const updateTest = async (req, res) => {
     }
 
     await test.update({
-      tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam, trang_thai,
+      tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam_toi_da, trang_thai,
     }, { transaction });
 
     if (cau_hoi.length > 0) {
@@ -262,6 +265,92 @@ export const updateTest = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "An unexpected error occurred while updating the test.",
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * Delete test: soft delete and force delete
+ */
+export const deleteTest = async (req, res) => {
+  const { test_id } = req.params;
+  const forceDelete = req.query.force === 'true';
+
+  try {
+    const test = await BaiKiemTra.findByPk(test_id);
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test not found'
+      })
+    }
+
+    if (!forceDelete) {
+      test.trang_thai = 'luu_tru';
+      await test.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Test archived successfully (soft delete)'
+      });
+    }
+
+    await test.destroy();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Test and related data have been deleted successfully!'
+    });
+
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({
+      success: false,
+      message: `Failed to delete test: ${error}`
+    });
+  }
+}
+
+/** 
+ * Restore test
+ */
+export const restoreTest = async (req, res) => {
+  try {
+    const { test_id } = req.params;
+    const test = await BaiKiemTra.findOne({
+      where: { ma_kiem_tra: test_id }
+    });
+
+    if (!test) {
+      return res.status(404).json({
+        success: false,
+        message: 'Test not found'
+      })
+    }
+
+    if (test.trang_thai !== 'luu_tru') {
+      return res.status(400).json({
+        success: false,
+        message: 'Test is not archived, cannot restore'
+      })
+    }
+
+    await test.update({
+      trang_thai: 'ban_nhap'
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Test restored sucessfully',
+      data: test
+    });
+  } catch (error) {
+    console.error("Error restoring test:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to restore test",
       error: error.message,
     });
   }
