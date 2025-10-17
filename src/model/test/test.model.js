@@ -8,7 +8,7 @@ const BaiKiemTra = sequelize.define("BaiKiemTra", {
     autoIncrement: true,
     primaryKey: true,
   },
-  ma_giang_vien: { 
+  ma_giang_vien: {
     type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
   },
@@ -19,6 +19,10 @@ const BaiKiemTra = sequelize.define("BaiKiemTra", {
   mo_ta: {
     type: DataTypes.TEXT,
     allowNull: true,
+  },
+  danh_muc: {
+    type: DataTypes.JSON,
+    allowNull: true
   },
   thoi_luong: {
     type: DataTypes.INTEGER,
@@ -42,6 +46,11 @@ const BaiKiemTra = sequelize.define("BaiKiemTra", {
     type: DataTypes.ENUM("hoat_dong", "ban_nhap", "luu_tru"),
     allowNull: false,
     defaultValue: "ban_nhap",
+  },
+  pham_vi_hien_thi: {
+    type: DataTypes.ENUM("cong_khai", "lop_hoc", "rieng_tu"),
+    allowNull: false,
+    defaultValue: "cong_khai",
   },
   ngay_bat_dau: {
     type: DataTypes.DATE,
