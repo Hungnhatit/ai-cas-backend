@@ -24,6 +24,8 @@ import BaiTap from "./assignment/assignment.model.js";        // assignment
 import BaiNop from "./assignment/assignment-submission.model.js"; // assignment_submission
 import KetNoiKiemTra from "./test/test-association.js";       // test_association
 import CauHoiKiemTra from "./test/test-question.model.js";
+import LanLamBaiKiemTra from "./test/test-attempt.model.js";
+import DanhMucBaiKiemTra from "./category.model.js";
 
 /**
  * NGƯỜI DÙNG (USERS)
@@ -70,11 +72,18 @@ DuLieuMux.belongsTo(Chuong, { foreignKey: "ma_chuong", as: "chuong" });
 /**
  * BÀI KIỂM TRA (TESTS)
  */
-BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi" }); // ma_kiem_tra
+BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_kiem_tra" }); // ma_kiem_tra
 CauHoiKiemTra.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" }); // test
 
-BaiKiemTra.hasMany(KetQua, { foreignKey: "ma_bai_kiem_tra", as: "ket_qua" });
-KetQua.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" });
+BaiKiemTra.hasMany(KetQua, { foreignKey: "ma_kiem_tra", as: "ket_qua" });
+KetQua.belongsTo(BaiKiemTra, { foreignKey: "ma_kiem_tra", as: "bai_kiem_tra" });
+
+/**
+ * Test attempts
+ */
+BaiKiemTra.hasMany(LanLamBaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'lan_lam_kiem_tra', onDelete: 'CASCADE' });
+LanLamBaiKiemTra.belongsTo(BaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'bai_kiem_tra' });
+
 
 /**
  * CÂU HỎI (QUESTIONS)
@@ -152,6 +161,17 @@ BaiNop.belongsTo(HocVien, { foreignKey: "ma_hoc_vien", as: "hoc_vien" });
  */
 BaiTap.hasMany(BaiNop, { foreignKey: "ma_bai_tap", as: "bai_nop" });
 BaiNop.belongsTo(BaiTap, { foreignKey: "ma_bai_tap", as: "bai_tap" });
+
+/**
+ * Category - User
+ */
+NguoiDung.hasMany(DanhMucBaiKiemTra, { foreignKey: 'nguoi_tao_danh_muc', as: 'danh_muc_bai_kiem_tra' });
+DanhMucBaiKiemTra.belongsTo(NguoiDung, { foreignKey: 'nguoi_tao_danh_muc', as: 'nguoi_tao' });
+
+/**
+ * BaiKiemTra - GiangVien
+ */
+BaiKiemTra.belongsTo(GiangVien, { foreignKey: 'ma_giang_vien', as: 'giang_vien' });
 
 /**
  * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)

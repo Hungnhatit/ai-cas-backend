@@ -5,8 +5,8 @@ import { sequelize } from "../../config/database.js";
  * Table: giang_vien
  * mo_ta: Stores instructor information.
  */
-const Instructor = sequelize.define("GiangVien", {
-  ma_giang_vien: {                 // ma_giang_vien
+const GiangVien = sequelize.define("GiangVien", {
+  ma_giang_vien: {                 // instructor_id
     type: DataTypes.INTEGER.UNSIGNED,
     autoIncrement: true,
     primaryKey: true,
@@ -45,4 +45,4 @@ const Instructor = sequelize.define("GiangVien", {
   timestamps: false, // disable auto timestamps, since DB columns already handle created/updated time
 });
 
-export default Instructor;
+export default GiangVien;

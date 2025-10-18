@@ -2,7 +2,7 @@ import Instructor from "../instructor/instructor.model.js";
 import Student from "../student/student.model.js";
 
 import TestAssignment from "./test-assignment.model.js";
-import TestAttempt from "./test-attemtp.model.js";
+import TestAttempt from "./test-attempt.model.js";
 import TestQuestion from "./test-question.model.js";
 import TestSection from "./test-section.model.js";
 import Test from "./test.model.js";
@@ -33,12 +33,12 @@ const TestAssociation = () => {
   TestAssignment.belongsTo(Test, { foreignKey: "ma_kiem_tra", as: "test" });
 
   // Student - TestAssignment
-  Student.hasMany(TestAssignment, {
-    foreignKey: "student_id",
-    as: "testAssignments",
-    onDelete: "CASCADE",
-  });
-  TestAssignment.belongsTo(Student, { foreignKey: "student_id", as: "student" });
+  // Student.hasMany(TestAssignment, {
+  //   foreignKey: "student_id",
+  //   as: "testAssignments",
+  //   onDelete: "CASCADE",
+  // });
+  // TestAssignment.belongsTo(Student, { foreignKey: "student_id", as: "student" });
 
   // Instructor - TestAssignment (assigned_by)
   Instructor.hasMany(TestAssignment, {
@@ -53,8 +53,8 @@ const TestAssociation = () => {
   TestAttempt.belongsTo(Test, { foreignKey: "ma_kiem_tra", as: "test" });
 
   // Student - TestAttempt
-  Student.hasMany(TestAttempt, { foreignKey: "student_id", as: "testAttempts", onDelete: "CASCADE" });
-  TestAttempt.belongsTo(Student, { foreignKey: "student_id", as: "student" });
+  // Student.hasMany(TestAttempt, { foreignKey: "student_id", as: "testAttempts", onDelete: "CASCADE" });
+  // TestAttempt.belongsTo(Student, { foreignKey: "student_id", as: "student" });
 
   // Optionally: If you want quick access to instructor on Test
   Instructor.hasMany(Test, { foreignKey: "ma_giang_vien", as: "createdTests", onDelete: "CASCADE" });

@@ -40,6 +40,10 @@ const CauHoiKiemTra = sequelize.define("CauHoiKiemTra", {
     type: DataTypes.STRING(255),
     allowNull: true,
   },
+  giai_thich: {
+    type: DataTypes.TEXT,
+    allowNull: true,   
+  },
   diem: { // points
     type: DataTypes.INTEGER,
     allowNull: false,
