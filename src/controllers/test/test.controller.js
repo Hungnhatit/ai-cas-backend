@@ -3,6 +3,7 @@ import CauHoiKiemTra from '../../model/test/test-question.model.js';
 import BaiKiemTra from '../../model/test/test.model.js'
 import LanLamBaiKiemTra from '../../model/test/test-attempt.model.js'
 import Test from '../../model/quiz/test.model.js';
+import GiangVien from '../../model/instructor/instructor.model.js';
 
 /**
  * Create new test
@@ -112,6 +113,41 @@ export const getTestById = async (req, res) => {
       data: parsedTest
     })
 
+  } catch (error) {
+    console.log(error);
+    res.status(404).json({
+      sucess: false,
+      message: `Error fetching test: ${error}`
+    });
+  }
+}
+
+/**
+ * Get all tests
+ */
+export const getTests = async (req, res) => {
+  try {
+    const tests = await BaiKiemTra.findAll({
+      where: { pham_vi_hien_thi: 'cong_khai' },
+      include: [
+        { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] },
+      ],
+      order: [['ngay_tao', 'desc']]
+    });
+
+    if (!tests) {
+      return res.status(404), json({
+        success: false,
+        message: 'No test found',
+        data: []
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `${tests.length} tests found!`,
+      data: tests
+    })
   } catch (error) {
     console.log(error);
     res.status(404).json({

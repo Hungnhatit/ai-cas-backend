@@ -40,7 +40,7 @@ export const createAssignment = async (req, res) => {
     if (!course) return res.status(404).json({ error: "Course not found" });
     if (!instructor) return res.status(404).json({ error: "Instructor not found" });
     if (!student) return res.status(404).json({ error: "Student not found" });
-    
+
 
     const assignment = await Assignment.create({
       tieu_de,
@@ -117,12 +117,12 @@ export const getAssignmentByInstructorId = async (req, res) => {
  */
 export const getAssignmentById = async (req, res) => {
   try {
-    const { ma_bai_tap } = req.params;
-    const assignment = await Assignment.findByPk(ma_bai_tap, {
+    const { assignment_id } = req.params;
+    const assignment = await Assignment.findByPk(assignment_id, {
       include: [
         {
           model: Instructor,
-          as: "instructor",
+          as: "giang_vien",
           attributes: ["ma_giang_vien", "ten", "email"]
         },
         {
@@ -131,7 +131,7 @@ export const getAssignmentById = async (req, res) => {
           include: [
             {
               model: Student,
-              as: "student",
+              as: "hoc_vien",
               attributes: ["student_id", "ten", "email"]
             }
           ]
@@ -143,7 +143,7 @@ export const getAssignmentById = async (req, res) => {
     if (!assignment) {
       return res.status(404).json({
         success: false,
-        message: `Assignment with ID ${ma_bai_tap} not found`,
+        message: `Assignment with ID ${assignment_id} not found`,
         data: null
       });
     }

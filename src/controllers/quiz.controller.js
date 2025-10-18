@@ -274,7 +274,7 @@ export const updateQuiz = async (req, res) => {
     await quiz.update({ tieu_de, khoa_hoc, mo_ta, thoi_luong, totalPoints, dueDate, so_lan_lam, trang_thai }, { transaction });
 
     if (questions.length > 0) {
-      // Xóa question cũ
+      // delete old question 
       await QuizQuestion.destroy({ where: { ma_kiem_tra: quiz.ma_kiem_tra }, transaction });
 
       // Tạo lại question mới
