@@ -10,11 +10,4 @@ router.post('/create', createStudent);
 
 router.get('/instructor/:ma_giang_vien', authenticate, getStudentsByInstructorId);
 
-
-
-
-
-
-
-
 export default router;
