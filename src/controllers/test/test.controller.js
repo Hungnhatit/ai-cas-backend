@@ -2,8 +2,8 @@ import { sequelize } from '../../config/database.js';
 import CauHoiKiemTra from '../../model/test/test-question.model.js';
 import BaiKiemTra from '../../model/test/test.model.js'
 import LanLamBaiKiemTra from '../../model/test/test-attempt.model.js'
-import Test from '../../model/quiz/test.model.js';
 import GiangVien from '../../model/instructor/instructor.model.js';
+import GiaoBaiKiemTra from '../../model/test/test-assignment.model.js';
 
 /**
  * Create new test
@@ -73,6 +73,57 @@ export const createTest = async (req, res) => {
       message: `Internal server error while creating test: ${error}`,
       error: error.message
     })
+  }
+}
+
+/**
+ * Assign test
+ */
+export const assignTestToStudent = async (req, res) => {
+  try {
+    const { test_id } = req.params;
+    const { student_ids, han_nop, instructor_id } = req.body;
+
+    console.log(test_id, student_ids);
+
+    if (!test_id || !Array.isArray(student_ids)) {
+      return res.status(400).json({
+        success: false,
+        message: `Missing required fields: test_id=${test_id}, student_id=${student_ids}`
+      });
+    }
+
+    const dataToInsert = student_ids.map((student_id) => ({
+      ma_kiem_tra: test_id,
+      ma_hoc_vien: student_id,
+      ngay_giao: new Date(),
+      nguoi_giao: instructor_id,
+      han_nop: han_nop || null,
+      trang_thai: 'chua_lam'
+    }));
+
+    GiaoBaiKiemTra.destroy({
+      where: {
+        ma_kiem_tra: test_id,
+        ma_hoc_vien: student_ids
+      }
+    })
+
+    const assigned = await GiaoBaiKiemTra.bulkCreate(dataToInsert);
+
+    return res.status(201).json({
+      success: true,
+      message: `The test has been successfully assigned to ${assigned.length} student!`,
+      data: assigned
+    })
+
+  } catch (error) {
+    console.error("Error assigning test:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to assign test to student",
+      error: error.message,
+    });
   }
 }
 
@@ -153,6 +204,68 @@ export const getTests = async (req, res) => {
     res.status(404).json({
       sucess: false,
       message: `Error fetching test: ${error}`
+    });
+  }
+}
+
+/**
+ * Get tests for student
+ */
+export const getTestsForStudent = async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    if (!student_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing student_id parameter'
+      });
+    }
+
+    const attempts = await LanLamBaiKiemTra.findAll({
+      where: { ma_hoc_vien: student_id },
+      attributes: ['ma_kiem_tra'],
+    });
+
+    const joinedTestIds = attempts.map(a => a.ma_kiem_tra);
+
+    const joinedTests = await BaiKiemTra.findAll({
+      where: { ma_kiem_tra: { [Op.in]: joinedTestIds } },
+      include: [
+        { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] },
+      ]
+    });
+
+    const assigned = await GiaoBaiKiemTra.findAll({
+      where: { ma_hoc_vien: student_id },
+      attributes: ['ma_kiem_tra']
+    });
+
+    const assignTestIds = assigned.map(a => a.ma_kiem_tra);
+
+    const unjoinedAssignTests = await BaiKiemTra.findAll({
+      where: {
+        pham_vi_hien_thi: 'cong_khai',
+        ma_kiem_tra: { [Op.notIn]: [...joinedTestIds, ...assignTestIds] },
+      },
+      include: [
+        { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] }
+      ]
+    })
+
+    return res.status(200).json({
+      success: true,
+      message: 'Fetch all tests for student successfully!',
+      data: {
+        joined_tests: joinedTests,
+        assigned_tests: unjoinedAssignTests,
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching tests for student:", error);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while fetching tests for student.",
+      error: error.message,
     });
   }
 }
