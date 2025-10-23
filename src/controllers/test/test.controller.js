@@ -82,7 +82,7 @@ export const createTest = async (req, res) => {
 export const assignTestToStudent = async (req, res) => {
   try {
     const { test_id } = req.params;
-    const { student_ids, han_nop, instructor_id } = req.body;
+    const { student_ids, ngay_ket_thuc, instructor_id } = req.body;
 
     console.log(test_id, student_ids);
 
@@ -96,9 +96,9 @@ export const assignTestToStudent = async (req, res) => {
     const dataToInsert = student_ids.map((student_id) => ({
       ma_kiem_tra: test_id,
       ma_hoc_vien: student_id,
-      ngay_giao: new Date(),
+      ngay_bat_dau: new Date(),
       nguoi_giao: instructor_id,
-      han_nop: han_nop || null,
+      ngay_ket_thuc: ngay_ket_thuc || null,
       trang_thai: 'chua_lam'
     }));
 
