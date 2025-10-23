@@ -26,6 +26,7 @@ import KetNoiKiemTra from "./test/test-association.js";       // test_associatio
 import CauHoiKiemTra from "./test/test-question.model.js";
 import LanLamBaiKiemTra from "./test/test-attempt.model.js";
 import DanhMucBaiKiemTra from "./category.model.js";
+import KetQuaAI from "./result/result.model.js";
 
 /**
  * NGƯỜI DÙNG (USERS)
@@ -173,10 +174,17 @@ DanhMucBaiKiemTra.belongsTo(NguoiDung, { foreignKey: 'nguoi_tao_danh_muc', as: '
  */
 BaiKiemTra.belongsTo(GiangVien, { foreignKey: 'ma_giang_vien', as: 'giang_vien' });
 
+
+/**
+ * KetQuaAi
+ */
+KetQuaAI.belongsTo(LanLamBaiKiemTra, { foreignKey: "ma_lan_lam", as: "lan_lam_kiem_tra" });
+
 /**
  * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)
  */
 KetNoiKiemTra();
+
 
 export {
   NguoiDung,
