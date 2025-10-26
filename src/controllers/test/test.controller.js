@@ -389,6 +389,7 @@ export const updateTest = async (req, res) => {
         lua_chon: q.lua_chon || [],
         dap_an_dung: q.dap_an_dung,
         diem: q.diem,
+        giai_thich: q.giai_thich
       }));
 
       await CauHoiKiemTra.bulkCreate(formattedQuestions, { transaction });
