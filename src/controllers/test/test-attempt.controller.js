@@ -1,3 +1,4 @@
+import { sequelize } from "../../config/database.js";
 import LanLamBaiKiemTra from "../../model/test/test-attempt.model.js";
 import CauHoiKiemTra from "../../model/test/test-question.model.js";
 import BaiKiemTra from '../../model/test/test.model.js';
@@ -220,7 +221,7 @@ export const getTestAttempts = async (req, res) => {
         message: 'test_id and student_id is required'
       });
     }
- 
+
     const attempts = await LanLamBaiKiemTra.findAll({
       where: {
         ma_kiem_tra: test_id,
@@ -247,5 +248,69 @@ export const getTestAttempts = async (req, res) => {
       success: false,
       message: "Internal server error when fetching attempts"
     });
+  }
+}
+
+/**
+ * Abort test attempt
+ */
+export const abortTestAttempt = async (req, res) => {
+  const { attempt_id } = req.params;
+  const user_id = req.user.ma_nguoi_dung;
+
+  if (!attempt_id) {
+    return res.status(400).json({
+      message: 'attempt_id not found'
+    });
+  }
+  const t = await sequelize.transaction();
+
+  try {
+    const attempt = await LanLamBaiKiemTra.findOne({
+      where: { ma_lan_lam: attempt_id },
+      lock: t.LOCK.UPDATE,
+      transaction: t
+    });
+    
+    if (!attempt) {
+      await t.rollback();
+      return res.status(404).json({
+        message: 'Attempt not found'
+      });
+    }
+
+    // permission: only owner or admin can abort
+    if (attempt.ma_hoc_vien !== user_id) {
+      await t.rollback();
+      return res.status(403).json({
+        message: 'Not allowed'
+      });
+    }
+
+    if (attempt.trang_thai === 'da_nop') {
+      await t.rollback();
+      return res.status(400).json({
+        message: `Attempt already ${attempt.trang_thai}`
+      })
+    }
+
+    // update: set status to aborted and set end_at
+    attempt.trang_thai = 'da_huy';
+    attempt.thoi_gian_ket_thuc = new Date();
+    await attempt.save({ transaction: t });
+
+    await t.commit();
+    return res.status(200).json({
+      success: true,
+      message: 'Attempt aborted',
+      data: attempt
+    });
+  } catch (error) {
+    await t.rollback();
+    console.error('Abort test attempt error: ', error);
+    return res.status(500).json({
+      message: 'Internal server error',
+      error: error.message
+    })
   }
 }
