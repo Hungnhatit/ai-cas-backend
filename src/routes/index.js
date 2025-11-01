@@ -12,6 +12,7 @@ import fileRoutes from './file.route.js';
 import testRoutes from './test.route.js';
 import testAttemptRoutes from './test-attempt.route.js';
 import aiEvaluationRoutes from './aiEvaluation.route.js';
+import userRoutes from './user.route.js'
 
 const router = express.Router();
 
@@ -26,6 +27,7 @@ router.use('/student', studentRoutes);
 router.use('/assignment', assignmentRoutes);
 router.use('/file', fileRoutes);
 router.use('/ai', aiEvaluationRoutes);
+router.use('/user', userRoutes);
 /**
  * Test routes
  */
