@@ -41,6 +41,14 @@ const KetQuaAI = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true
     },
+    phan_tich: {
+      type: DataTypes.JSON,
+      allowNull: true
+    },
+    goi_y_hoc_tap: {
+      type: DataTypes.JSON,
+      allowNull: true
+    },
     ngay_danh_gia: {
       type: DataTypes.DATE,
       defaultValue: DataTypes.NOW
