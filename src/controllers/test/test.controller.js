@@ -4,6 +4,7 @@ import BaiKiemTra from '../../model/test/test.model.js'
 import LanLamBaiKiemTra from '../../model/test/test-attempt.model.js'
 import GiangVien from '../../model/instructor/instructor.model.js';
 import GiaoBaiKiemTra from '../../model/test/test-assignment.model.js';
+import PhanKiemTra from '../../model/test/test-section.model.js';
 
 /**
  * Create new test
@@ -11,7 +12,7 @@ import GiaoBaiKiemTra from '../../model/test/test-assignment.model.js';
 export const createTest = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { ma_giang_vien, tieu_de, mo_ta, thoi_luong, tong_diem, so_lan_lam_toi_da, do_kho, trang_thai, ngay_bat_dau, ngay_ket_thuc, cau_hoi = []
+    const { ma_giang_vien, tieu_de, mo_ta, thoi_luong, so_phan = 0, sections = [], tong_diem, so_lan_lam_toi_da, do_kho, trang_thai, ngay_bat_dau, ngay_ket_thuc, cau_hoi = []
     } = req.body;
 
     // validate required fields
@@ -34,6 +35,7 @@ export const createTest = async (req, res) => {
       mo_ta: mo_ta || null,
       thoi_luong,
       tong_diem,
+      so_phan,
       so_lan_lam_toi_da: so_lan_lam_toi_da || 1,
       do_kho: do_kho || "de",
       trang_thai: trang_thai || "ban_nhap",
@@ -43,17 +45,44 @@ export const createTest = async (req, res) => {
       ngay_cap_nhat: new Date(),
     }, { transaction: t });
 
-    if (cau_hoi && Array.isArray(cau_hoi) && cau_hoi.length > 0) {
-      const formattedQuestions = cau_hoi.map((q) => ({
-        ma_bai_kiem_tra: test.ma_kiem_tra,
-        cau_hoi: q.cau_hoi,
-        loai: q.loai,
-        lua_chon: q.lua_chon ? JSON.stringify(q.lua_chon) : JSON.stringify([]),
-        dap_an_dung: q.dap_an_dung,
-        diem: q.diem || 1,
+    let createdSections = [];
+    if (sections && Array.isArray(sections) && sections.length > 0) {
+      const formatSections = sections.map((section, index) => ({
+        ma_kiem_tra: test.ma_kiem_tra,
+        ten_phan: section.ten_phan || `Phần ${index + 1}`,
+        mo_ta: section.mo_ta || null,
+        loai_phan: section.loai_phan || 'trac_nghiem',
+        thu_tu: section.thu_tu || index + 1,
+        diem_toi_da: section.diem_toi_da || 10,
+        thoi_gian_gioi_han: section.thoi_gian_gioi_han || null,
+        tieu_chi_danh_gia: section.tieu_chi_danh_gia || null,
         ngay_tao: new Date(),
         ngay_cap_nhat: new Date(),
       }));
+
+      createdSections = await PhanKiemTra.bulkCreate(formatSections, {
+        transaction: t,
+        returning: true
+      });
+    }
+
+    if (cau_hoi.length > 0) {
+      const formattedQuestions = cau_hoi.map((q) => {
+        const section = createdSections.find(s =>
+          s.ten_phan === q.ten_phan || s.loai_phan === q.loai_phan
+        );
+        return {
+          ma_bai_kiem_tra: test.ma_kiem_tra,
+          ma_phan: section ? section.ma_phan : null,
+          cau_hoi: q.cau_hoi,
+          loai: q.loai,
+          lua_chon: q.lua_chon || [],
+          dap_an_dung: q.dap_an_dung,
+          diem: q.diem || 1,
+          ngay_tao: new Date(),
+          ngay_cap_nhat: new Date(),
+        }
+      });
       await CauHoiKiemTra.bulkCreate(formattedQuestions, { transaction: t });
       console.log(formattedQuestions)
     }
@@ -68,6 +97,7 @@ export const createTest = async (req, res) => {
 
   } catch (error) {
     console.log(error);
+    await t.rollback();
     return res.status(500).json({
       status: 'error',
       message: `Internal server error while creating test: ${error}`,
@@ -447,7 +477,18 @@ export const deleteTest = async (req, res) => {
       });
     }
 
-    await test.destroy();
+    await sequelize.transaction(async (t) => {
+      await CauHoiKiemTra.destroy({
+        where: { ma_bai_kiem_tra: test_id },
+        transaction: t
+      });
+      await PhanKiemTra.destroy({
+        where: { ma_kiem_tra: test_id },
+        transaction: t
+      })
+
+      await test.destroy({ transaction: t });
+    })
 
     return res.status(200).json({
       success: true,
