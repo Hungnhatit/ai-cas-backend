@@ -27,6 +27,7 @@ import CauHoiKiemTra from "./test/test-question.model.js";
 import LanLamBaiKiemTra from "./test/test-attempt.model.js";
 import DanhMucBaiKiemTra from "./category.model.js";
 import KetQuaAI from "./result/result.model.js";
+import PhanKiemTra from "./test/test-section.model.js";
 
 /**
  * NGƯỜI DÙNG (USERS)
@@ -73,7 +74,7 @@ DuLieuMux.belongsTo(Chuong, { foreignKey: "ma_chuong", as: "chuong" });
 /**
  * BÀI KIỂM TRA (TESTS)
  */
-BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_kiem_tra" }); // ma_kiem_tra
+BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_kiem_tra" }); 
 CauHoiKiemTra.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" }); // test
 
 BaiKiemTra.hasMany(KetQua, { foreignKey: "ma_kiem_tra", as: "ket_qua" });
@@ -179,6 +180,22 @@ BaiKiemTra.belongsTo(GiangVien, { foreignKey: 'ma_giang_vien', as: 'giang_vien' 
  * KetQuaAi
  */
 KetQuaAI.belongsTo(LanLamBaiKiemTra, { foreignKey: "ma_lan_lam", as: "lan_lam_kiem_tra" });
+
+/**
+ * BaiKiemTra - PhanKiemTra
+ */
+PhanKiemTra.belongsTo(BaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'bai_kiem_tra' });
+BaiKiemTra.hasMany(PhanKiemTra, { foreignKey: 'ma_kiem_tra', as: 'phan_kiem_tra', onDelete: 'CASCADE' });
+
+PhanKiemTra.hasMany(CauHoiKiemTra, {
+  foreignKey: 'ma_phan',
+  as: 'cau_hoi_kiem_tra',
+  onDelete: 'CASCADE'
+});
+CauHoiKiemTra.belongsTo(PhanKiemTra, {
+  foreignKey: 'ma_phan',
+  as: 'phan_kiem_tra'
+});
 
 /**
  * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)
