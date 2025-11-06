@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import Student from '../../model/student/student.model.js'
 import User from '../../model/auth/user.model.js';
 import Instructor from "../../model/instructor/instructor.model.js";
+import NguoiDung from "../../model/auth/user.model.js";
 
 const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "mysecret";
 
@@ -47,7 +48,7 @@ const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "mysecret";
 export const register = async (req, res) => {
   try {
     const { ten, email, mat_khau, avatar, vai_tro } = req.body;
-    const existingUser = await User.findOne({
+    const existingUser = await NguoiDung.findOne({
       where: { email }
     });
 
@@ -59,7 +60,7 @@ export const register = async (req, res) => {
 
     const hashedPasword = await bcrypt.hash(mat_khau, 10);
 
-    const newUser = await User.create({
+    const newUser = await NguoiDung.create({
       ten,
       email,
       vai_tro,
@@ -86,7 +87,7 @@ export const register = async (req, res) => {
     const token = jwt.sign(
       { ma_nguoi_dung: newUser.ma_nguoi_dung, email: newUser.email, vai_tro: newUser.vai_tro },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: '1d' }
+      { expiresIn: '5d' }
     )
 
     return res.status(201).json({
@@ -127,7 +128,7 @@ export const login = async (req, res) => {
     const token = jwt.sign(
       { ma_nguoi_dung: user.ma_nguoi_dung, email: user.email, vai_tro: user.vai_tro },
       JWT_SECRET_KEY,
-      { expiresIn: "1d" }
+      { expiresIn: "5d" }
     );
 
     return res.json({
