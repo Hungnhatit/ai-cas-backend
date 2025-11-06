@@ -66,11 +66,16 @@ export const createTest = async (req, res) => {
       });
     }
 
+    // console.log('phankiemtra: ', createdSections);
+    // console.log('cauhoikiemtra: ', cau_hoi);
+
     if (cau_hoi.length > 0) {
       const formattedQuestions = cau_hoi.map((q) => {
         const section = createdSections.find(s =>
-          s.ten_phan === q.ten_phan || s.loai_phan === q.loai_phan
+          s.loai_phan === q.loai
         );
+        // console.log('section: ', section.ma_phan);
+        
         return {
           ma_bai_kiem_tra: test.ma_kiem_tra,
           ma_phan: section ? section.ma_phan : null,
@@ -167,6 +172,11 @@ export const getTestById = async (req, res) => {
     const test = await BaiKiemTra.findByPk(test_id, {
       include: [
         { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
+        {
+          model: PhanKiemTra, as: 'phan_kiem_tra', include: [
+            { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
+          ]
+        }
       ]
     });
 
@@ -317,7 +327,8 @@ export const getTestsByInstructorId = async (req, res) => {
     const tests = await BaiKiemTra.findAll({
       where: { ma_giang_vien: instructor_id },
       include: [
-        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
+        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
+        { model: PhanKiemTra, as: 'phan_kiem_tra' }
       ],
       order: [['ngay_tao', 'DESC']]
     });
