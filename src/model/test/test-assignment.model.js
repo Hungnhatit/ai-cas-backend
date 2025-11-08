@@ -1,14 +1,14 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
 
-const GiaoBaiTracNghiem = sequelize.define("GiaoBaiTracNghiem", {
-  ma_giao_bai: { // assignment_id
+const GiaoBaiKiemTra = sequelize.define("GiaoBaiKiemTra", {
+  ma_giao_kiem_tra: {
     type: DataTypes.INTEGER.UNSIGNED,
     autoIncrement: true,
     allowNull: false,
     primaryKey: true,
   },
-  ma_bai_trac_nghiem: { // quiz_id
+  ma_kiem_tra: {
     type: DataTypes.INTEGER.UNSIGNED,
     allowNull: false,
   },
@@ -18,9 +18,15 @@ const GiaoBaiTracNghiem = sequelize.define("GiaoBaiTracNghiem", {
   },
   nguoi_giao: { // assigned_by (giảng viên giao bài)
     type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: false,
+    allowNull: null,
+    defaultValue: null,
   },
-  thoi_gian_giao: { // assigned_at
+  ngay_giao: { // assigned_at
+    type: DataTypes.DATE,
+    allowNull: false,
+    defaultValue: DataTypes.NOW,
+  },
+  ngay_ket_thuc: {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
@@ -41,16 +47,16 @@ const GiaoBaiTracNghiem = sequelize.define("GiaoBaiTracNghiem", {
     defaultValue: DataTypes.NOW,
   },
 }, {
-  tableName: "giao_bai_trac_nghiem",
+  tableName: "giao_bai_kiem_tra",
   timestamps: false, // vì bảng đã có cột ngày_tao & ngày_cap_nhat
   underscored: true,
   indexes: [
     {
       unique: true,
-      fields: ["ma_bai_trac_nghiem", "ma_hoc_vien"],
+      fields: ["ma_kiem_tra", "ma_hoc_vien"],
       name: "uq_bai_trac_nghiem_hoc_vien"
     }
   ]
 });
 
-export default GiaoBaiTracNghiem;
+export default GiaoBaiKiemTra;
