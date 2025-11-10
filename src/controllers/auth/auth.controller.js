@@ -69,6 +69,7 @@ export const register = async (req, res) => {
 
     if (vai_tro === 'student') {
       await Student.create({
+        ma_hoc_vien: newUser.ma_nguoi_dung,
         ten,
         email,
         mat_khau: hashedPasword,
@@ -77,6 +78,7 @@ export const register = async (req, res) => {
 
     if (vai_tro === 'instructor') {
       await Instructor.create({
+        ma_giang_vien: newUser.ma_nguoi_dung,
         ten,
         email,
         mat_khau: hashedPasword,
