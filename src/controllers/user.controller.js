@@ -6,7 +6,18 @@ import bcrypt from 'bcrypt';
  */
 export const getUsers = async (req, res) => {
   try {
-    const users = await NguoiDung.findAll();
+    let { page, limit } = req.query;
+    page = parseInt(page) || 1;
+    limit = parseInt(limit) || 10;
+    const offset = (page - 1) * limit;
+
+    const { count, rows: users } = await NguoiDung.findAndCountAll({
+      limit,
+      offset,
+      order: [['ngay_tao', 'DESC']]
+    });
+
+    const totalPages = Math.ceil(count / limit);
 
     if (!users) {
       return res.status(404).json({
@@ -17,7 +28,13 @@ export const getUsers = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `${users.length} users found`,
-      data: users
+      data: users,
+      pagination: {
+        totalUsers: count,
+        totalPages,
+        currentPage: page,
+        pageSize: limit
+      }
     })
   } catch (error) {
     console.log(error);
@@ -147,13 +164,13 @@ export const softDeleteUser = async (req, res) => {
  */
 export const restoreUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { user_id } = req.params;
 
-    const user = await NguoiDung.findByPk(id);
+    const user = await NguoiDung.findByPk(user_id);
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: `User with ID ${id} not found.`,
+        message: `User with ID ${user_id} not found.`,
       });
     }
 
@@ -186,13 +203,13 @@ export const restoreUser = async (req, res) => {
  */
 export const forceDeleteUser = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { user_id } = req.params;
 
-    const user = await NguoiDung.findByPk(id);
+    const user = await NguoiDung.findByPk(user_id);
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: `User with ID ${id} not found.`,
+        message: `User with ID ${user_id} not found.`,
       });
     }
 
@@ -200,7 +217,7 @@ export const forceDeleteUser = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: `User with ID ${id} permanently deleted.`,
+      message: `User with ID ${user_id} permanently deleted.`,
     });
   } catch (error) {
     console.error("Error force deleting user:", error);
