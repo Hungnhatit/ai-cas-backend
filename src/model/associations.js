@@ -30,7 +30,7 @@ import KetQuaAI from "./result/result.model.js";
 import PhanKiemTra from "./test/test-section.model.js";
 
 /**
- * NGƯỜI DÙNG (USERS)
+ * (USERS)
  */
 NguoiDung.hasMany(KhoaHoc, { foreignKey: "ma_nguoi_dung", as: "khoa_hoc" }); // ma_nguoi_dung
 KhoaHoc.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "giang_vien" }); // instructor
@@ -43,6 +43,28 @@ TienDoNguoiDung.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_d
 
 NguoiDung.hasMany(KetQua, { foreignKey: "ma_nguoi_dung", as: "ket_qua" }); // results
 KetQua.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_dung" });
+
+NguoiDung.hasOne(GiangVien, {
+  foreignKey: 'ma_nguoi_dung',
+  as: 'giang_vien'
+});
+
+NguoiDung.hasOne(HocVien, {
+  foreignKey: 'ma_nguoi_dung',
+  as: 'hoc_vien'
+});
+
+// models/Instructor.js
+GiangVien.belongsTo(NguoiDung, {
+  foreignKey: 'ma_nguoi_dung',
+  as: 'nguoi_dung'
+})
+
+
+
+
+
+
 
 /**
  * DANH MỤC (CATEGORIES)
@@ -74,7 +96,7 @@ DuLieuMux.belongsTo(Chuong, { foreignKey: "ma_chuong", as: "chuong" });
 /**
  * BÀI KIỂM TRA (TESTS)
  */
-BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_kiem_tra" }); 
+BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_kiem_tra" });
 CauHoiKiemTra.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" }); // test
 
 BaiKiemTra.hasMany(KetQua, { foreignKey: "ma_kiem_tra", as: "ket_qua" });
