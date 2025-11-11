@@ -29,6 +29,7 @@ const NguoiDung = sequelize.define("NguoiDung", {
   },
   trang_thai: {
     type: DataTypes.ENUM("dang_hoat_dong", "ngung_hoat_dong"),
+    defaultValue: 'dang_hoat_dong',
     allowNull: false,
   }
 
