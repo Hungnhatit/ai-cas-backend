@@ -75,7 +75,7 @@ export const createTest = async (req, res) => {
           s.loai_phan === q.loai
         );
         // console.log('section: ', section.ma_phan);
-        
+
         return {
           ma_bai_kiem_tra: test.ma_kiem_tra,
           ma_phan: section ? section.ma_phan : null,
@@ -222,6 +222,7 @@ export const getTests = async (req, res) => {
       where: { pham_vi_hien_thi: 'cong_khai' },
       include: [
         { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] },
+        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra', attributes: ['ma_cau_hoi', 'ma_phan', 'cau_hoi'] }
       ],
       order: [['ngay_tao', 'desc']]
     });
@@ -396,13 +397,15 @@ export const updateTest = async (req, res) => {
   const transaction = await BaiKiemTra.sequelize.transaction();
   const { test_id } = req.params;
   const ma_giang_vien = req.user.ma_nguoi_dung;
+  const {
+    tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han,
+    so_lan_lam_toi_da, trang_thai, phan = []
+  } = req.body;
 
   try {
-    const { tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam_toi_da, trang_thai, cau_hoi = [] } = req.body;
-
     const test = await BaiKiemTra.findOne({
       where: { ma_kiem_tra: test_id, ma_giang_vien },
-      transaction
+      transaction,
     });
 
     if (!test) {
@@ -413,45 +416,98 @@ export const updateTest = async (req, res) => {
       });
     }
 
+    // ✅ Cập nhật thông tin cơ bản của bài kiểm tra
     await test.update({
-      tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han, so_lan_lam_toi_da, trang_thai,
+      tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han,
+      so_lan_lam_toi_da, trang_thai,
     }, { transaction });
 
-    if (cau_hoi.length > 0) {
-      await CauHoiKiemTra.destroy({
-        where: { ma_bai_kiem_tra: test.ma_kiem_tra },
-        transaction
-      });
+    // ✅ Cập nhật hoặc thêm mới từng phần (section)
+    for (const section of phan) {
+      let updatedSection;
 
-      const formattedQuestions = cau_hoi.map((q) => ({
-        ma_bai_kiem_tra: test.ma_kiem_tra,
-        cau_hoi: q.cau_hoi,
-        loai: q.loai,
-        lua_chon: q.lua_chon || [],
-        dap_an_dung: q.dap_an_dung,
-        diem: q.diem,
-        giai_thich: q.giai_thich
-      }));
+      if (section.ma_phan) {
+        // Nếu có ID => update
+        updatedSection = await PhanKiemTra.findByPk(section.ma_phan, { transaction });
+        if (updatedSection) {
+          await updatedSection.update({
+            ten_phan: section.ten_phan,
+            mo_ta: section.mo_ta,
+            thu_tu: section.thu_tu || 1,
+          }, { transaction });
+        } else {
+          // Nếu không tìm thấy section cũ (vì bị xóa chẳng hạn)
+          updatedSection = await PhanKiemTra.create({
+            ma_kiem_tra: test.ma_kiem_tra,
+            ten_phan: section.ten_phan,
+            mo_ta: section.mo_ta,
+            thu_tu: section.thu_tu || 1,
+          }, { transaction });
+        }
+      } else {
+        // Nếu không có ID => tạo mới
+        updatedSection = await PhanKiemTra.create({
+          ma_kiem_tra: test.ma_kiem_tra,
+          ten_phan: section.ten_phan,
+          mo_ta: section.mo_ta,
+          thu_tu: section.thu_tu || 1,
+        }, { transaction });
+      }
 
-      await CauHoiKiemTra.bulkCreate(formattedQuestions, { transaction });
+      // ✅ Cập nhật câu hỏi trong mỗi phần
+      if (section.cau_hoi?.length > 0) {
+        for (const q of section.cau_hoi) {
+          if (q.ma_cau_hoi) {
+            // Update nếu có ID
+            const existingQ = await CauHoiKiemTra.findByPk(q.ma_cau_hoi, { transaction });
+            if (existingQ) {
+              await existingQ.update({
+                cau_hoi: q.cau_hoi,
+                loai: q.loai,
+                lua_chon: q.lua_chon || [],
+                dap_an_dung: q.dap_an_dung,
+                diem: q.diem,
+                giai_thich: q.giai_thich,
+              }, { transaction });
+            }
+          } else {
+
+            await CauHoiKiemTra.create({
+              ma_bai_kiem_tra: test.ma_kiem_tra,
+              ma_phan: updatedSection.ma_phan,
+              cau_hoi: q.cau_hoi,
+              loai: q.loai,
+              lua_chon: q.lua_chon || [],
+              dap_an_dung: q.dap_an_dung,
+              diem: q.diem,
+              giai_thich: q.giai_thich,
+            }, { transaction });
+          }
+        }
+      }
     }
 
     await transaction.commit();
 
-    // fetch updated test with its questions
+    // ✅ Lấy lại dữ liệu đầy đủ sau khi cập nhật
     const updatedTest = await BaiKiemTra.findByPk(test_id, {
-      include: [{ model: CauHoiKiemTra, as: "cau_hoi_kiem_tra" }],
+      include: [
+        {
+          model: PhanKiemTra,
+          as: "phan_kiem_tra",
+          include: [{ model: CauHoiKiemTra, as: "cau_hoi_kiem_tra" }],
+        },
+      ],
     });
 
-    // success response
     return res.status(200).json({
       success: true,
       message: "Test updated successfully.",
       data: updatedTest,
     });
+
   } catch (error) {
     if (transaction) await transaction.rollback();
-
     console.error("Error updating test:", error);
     return res.status(500).json({
       success: false,
@@ -459,7 +515,10 @@ export const updateTest = async (req, res) => {
       error: error.message,
     });
   }
-}
+};
+
+
+
 
 /**
  * Delete test: soft delete and force delete
