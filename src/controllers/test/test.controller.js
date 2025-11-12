@@ -5,6 +5,8 @@ import LanLamBaiKiemTra from '../../model/test/test-attempt.model.js'
 import GiangVien from '../../model/instructor/instructor.model.js';
 import GiaoBaiKiemTra from '../../model/test/test-assignment.model.js';
 import PhanKiemTra from '../../model/test/test-section.model.js';
+import DanhMucBaiKiemTra from '../../model/category.model.js';
+import { Op } from 'sequelize';
 
 /**
  * Create new test
@@ -12,7 +14,7 @@ import PhanKiemTra from '../../model/test/test-section.model.js';
 export const createTest = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { ma_giang_vien, tieu_de, mo_ta, thoi_luong, so_phan = 0, sections = [], tong_diem, so_lan_lam_toi_da, do_kho, trang_thai, ngay_bat_dau, ngay_ket_thuc, cau_hoi = []
+    const { ma_giang_vien, tieu_de, mo_ta, thoi_luong, so_phan = 0, sections = [], danh_muc, tong_diem, so_lan_lam_toi_da, do_kho, trang_thai, ngay_bat_dau, ngay_ket_thuc, cau_hoi = []
     } = req.body;
 
     // validate required fields
@@ -44,6 +46,14 @@ export const createTest = async (req, res) => {
       ngay_tao: new Date(),
       ngay_cap_nhat: new Date(),
     }, { transaction: t });
+
+    if (Array.isArray(danh_muc) && danh_muc.length > 0) {
+      const insertData = danh_muc.map(ma => ({
+        ma_kiem_tra: test.ma_kiem_tra,
+        ma_danh_muc: ma
+      }));
+      await sequelize.getQueryInterface().bulkInsert('bai_kiem_tra_danh_muc', insertData, { transaction: t });
+    }
 
     let createdSections = [];
     if (sections && Array.isArray(sections) && sections.length > 0) {
@@ -172,6 +182,7 @@ export const getTestById = async (req, res) => {
     const test = await BaiKiemTra.findByPk(test_id, {
       include: [
         { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
+        { model: DanhMucBaiKiemTra, as: 'danh_muc_bai_kiem_tra', attributes: ['ma_danh_muc', 'ten_danh_muc'] },
         {
           model: PhanKiemTra, as: 'phan_kiem_tra', include: [
             { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
@@ -218,33 +229,64 @@ export const getTestById = async (req, res) => {
  */
 export const getTests = async (req, res) => {
   try {
+    let { page = 1, limit = 10, query = '', category = '' } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+    const offset = (page - 1) * limit;
+
+    const where = {
+      pham_vi_hien_thi: 'cong_khai'
+    };
+
+    if (query) {
+      where.tieu_de = { [Op.like]: `%${query}%` };
+    }
+
+    if (category) {
+      where.danh_muc = { [Op.like]: `%${category}%` }; 
+    }
+
+    const totalItems = await BaiKiemTra.count({
+      where,
+      distinct: true,
+      col: 'ma_kiem_tra'
+    });
+
+    const totalPages = Math.ceil(totalItems / limit);
+
     const tests = await BaiKiemTra.findAll({
-      where: { pham_vi_hien_thi: 'cong_khai' },
+      where,
       include: [
         { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] },
         { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra', attributes: ['ma_cau_hoi', 'ma_phan', 'cau_hoi'] }
       ],
-      order: [['ngay_tao', 'desc']]
+      order: [['ngay_tao', 'DESC']],
+      offset,
+      limit
     });
-
-    if (!tests) {
-      return res.status(404), json({
-        success: false,
-        message: 'No test found',
-        data: []
-      });
-    }
 
     return res.status(200).json({
       success: true,
-      message: `${tests.length} tests found!`,
+      message: `${tests.length} tests found`,
+      pagination: {
+        totalItems,
+        totalPages,
+        currentPage: page,
+        pageSize: limit
+      },
+      filters: {
+        query,
+        category
+      },
       data: tests
-    })
+    });
+
   } catch (error) {
-    console.log(error);
-    res.status(404).json({
-      sucess: false,
-      message: `Error fetching test: ${error}`
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: `Error fetching tests: ${error.message}`
     });
   }
 }
