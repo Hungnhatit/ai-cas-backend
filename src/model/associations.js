@@ -220,6 +220,27 @@ CauHoiKiemTra.belongsTo(PhanKiemTra, {
 });
 
 /**
+ * BaiKiemTra - DanhMuc
+ */
+BaiKiemTra.belongsToMany(DanhMucBaiKiemTra, {
+  through: 'bai_kiem_tra_danh_muc',
+  foreignKey: 'ma_kiem_tra',
+  otherKey: 'ma_danh_muc',
+  as: 'danh_muc_bai_kiem_tra',
+  timestamps: false,
+});
+
+// models/DanhMucBaiKiemTra.js
+DanhMucBaiKiemTra.belongsToMany(BaiKiemTra, {
+  through: 'bai_kiem_tra_danh_muc',
+  foreignKey: 'ma_danh_muc',
+  otherKey: 'ma_kiem_tra',
+  as: 'bai_kiem_tra',
+  timestamps: false,
+});
+
+
+/**
  * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)
  */
 KetNoiKiemTra();
