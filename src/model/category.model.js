@@ -18,12 +18,12 @@ const DanhMucBaiKiemTra = sequelize.define(
       allowNull: true,
     },
     trang_thai: {
-      type: DataTypes.ENUM("hoat_dong", "khong_hoat_dong"),
-      defaultValue: "hoat_dong",
+      type: DataTypes.ENUM("cho_duyet", "da_duyet", "tu_choi"),
+      defaultValue: "cho_duyet",
     },
     nguoi_tao_danh_muc: {
       type: DataTypes.INTEGER.UNSIGNED,
-      allowNull: true, 
+      allowNull: true,
     },
     ngay_tao: {
       type: DataTypes.DATE,
@@ -36,9 +36,7 @@ const DanhMucBaiKiemTra = sequelize.define(
   },
   {
     tableName: "danh_muc_bai_kiem_tra",
-    timestamps: true,
-    createdAt: "ngay_tao",
-    updatedAt: "ngay_cap_nhat",
+    timestamps: false
   }
 );
 
