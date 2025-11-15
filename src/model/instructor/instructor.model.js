@@ -28,6 +28,10 @@ const GiangVien = sequelize.define("GiangVien", {
     type: DataTypes.STRING(20),
     allowNull: true,
   },
+  anh_dai_dien: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+  },
   tieu_su: {                       // bio
     type: DataTypes.TEXT,
     allowNull: true,
