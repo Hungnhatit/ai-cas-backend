@@ -239,7 +239,6 @@ DanhMucBaiKiemTra.belongsToMany(BaiKiemTra, {
   timestamps: false,
 });
 
-
 /**
  * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)
  */

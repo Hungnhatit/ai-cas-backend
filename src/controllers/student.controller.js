@@ -78,7 +78,7 @@ export const createStudent = async (req, res) => {
     const token = jwt.sign(
       { ma_nguoi_dung: newUser.ma_nguoi_dung, email: newUser.email, role: newUser.role },
       process.env.JWT_SECRET_KEY,
-      { expiresIn: '1d' }
+      { expiresIn: '5d' }
     )
 
     return res.status(201).json({

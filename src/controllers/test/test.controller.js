@@ -244,7 +244,7 @@ export const getTests = async (req, res) => {
     }
 
     if (category) {
-      where.danh_muc = { [Op.like]: `%${category}%` }; 
+      where.danh_muc = { [Op.like]: `%${category}%` };
     }
 
     const totalItems = await BaiKiemTra.count({
@@ -259,6 +259,7 @@ export const getTests = async (req, res) => {
       where,
       include: [
         { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] },
+        { model: DanhMucBaiKiemTra, as: 'danh_muc_bai_kiem_tra', attributes: ['ma_danh_muc', 'ten_danh_muc'] },
         { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra', attributes: ['ma_cau_hoi', 'ma_phan', 'cau_hoi'] }
       ],
       order: [['ngay_tao', 'DESC']],

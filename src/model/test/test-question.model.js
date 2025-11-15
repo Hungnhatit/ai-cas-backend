@@ -2,6 +2,7 @@
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
 import BaiKiemTra from "./test.model.js";
+import PhanKiemTra from "./test-section.model.js";
 
 const CauHoiKiemTra = sequelize.define("CauHoiKiemTra", {
   ma_cau_hoi: { // test_question_id
@@ -20,10 +21,16 @@ const CauHoiKiemTra = sequelize.define("CauHoiKiemTra", {
     onUpdate: 'CASCADE',
     onDelete: 'CASCADE'
   },
-  // ma_phan: { // section_id
-  //   type: DataTypes.INTEGER.UNSIGNED,
-  //   allowNull: false,
-  // },
+  ma_phan: {
+    type: DataTypes.INTEGER.UNSIGNED,
+    allowNull: true,
+    references: {
+      model: PhanKiemTra,
+      key: 'ma_phan'
+    },
+    onUpdate: 'CASCADE',
+    onDelete: 'CASCADE'
+  },
   cau_hoi: { // question_text
     type: DataTypes.TEXT,
     allowNull: false,
@@ -42,7 +49,7 @@ const CauHoiKiemTra = sequelize.define("CauHoiKiemTra", {
   },
   giai_thich: {
     type: DataTypes.TEXT,
-    allowNull: true,   
+    allowNull: true,
   },
   diem: { // points
     type: DataTypes.INTEGER,
