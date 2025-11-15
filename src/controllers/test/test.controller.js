@@ -184,6 +184,11 @@ export const getTestById = async (req, res) => {
         { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
         { model: DanhMucBaiKiemTra, as: 'danh_muc_bai_kiem_tra', attributes: ['ma_danh_muc', 'ten_danh_muc'] },
         {
+          model: GiangVien,
+          as: 'giang_vien',
+          attributes: ['ten']
+        },
+        {
           model: PhanKiemTra, as: 'phan_kiem_tra', include: [
             { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
           ]
