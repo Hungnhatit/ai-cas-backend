@@ -28,6 +28,7 @@ import LanLamBaiKiemTra from "./test/test-attempt.model.js";
 import DanhMucBaiKiemTra from "./category.model.js";
 import KetQuaAI from "./result/result.model.js";
 import PhanKiemTra from "./test/test-section.model.js";
+import BinhLuanBaiKiemTra from "./test/test-comment.model.js";
 
 /**
  * (USERS)
@@ -196,6 +197,7 @@ DanhMucBaiKiemTra.belongsTo(NguoiDung, { foreignKey: 'nguoi_tao_danh_muc', as: '
  * BaiKiemTra - GiangVien
  */
 BaiKiemTra.belongsTo(GiangVien, { foreignKey: 'ma_giang_vien', as: 'giang_vien' });
+GiangVien.hasMany(BaiKiemTra, { foreignKey: 'ma_giang_vien', as: 'bai_kiem_tra' });
 
 
 /**
@@ -240,6 +242,36 @@ DanhMucBaiKiemTra.belongsToMany(BaiKiemTra, {
 });
 
 /**
+ * Test - Comment
+ */
+BinhLuanBaiKiemTra.belongsTo(BaiKiemTra, {
+  foreignKey: "ma_kiem_tra",
+  as: "bai_kiem_tra"
+});
+
+// lien ket den nguoi_dung
+BinhLuanBaiKiemTra.belongsTo(NguoiDung, {
+  foreignKey: "ma_nguoi_dung",
+  as: "nguoi_dung"
+});
+
+// binh luan cha
+BinhLuanBaiKiemTra.belongsTo(BinhLuanBaiKiemTra, {
+  foreignKey: "ma_binh_luan_goc",
+  as: "binh_luan_goc"
+});
+
+// binh luan con
+BinhLuanBaiKiemTra.hasMany(BinhLuanBaiKiemTra, {
+  foreignKey: "ma_binh_luan_goc",
+  as: "binh_luan_phan_hoi"
+});
+
+
+
+
+
+/**
  * GỌI CÁC LIÊN KẾT KHÁC (TEST ASSOCIATION)
  */
 KetNoiKiemTra();
@@ -255,6 +287,7 @@ export {
   TepDinhKem,
   DuLieuMux,
   BaiKiemTra,
+  GiangVien,
   CauHoi,
   LuaChon,
   KetQua,
