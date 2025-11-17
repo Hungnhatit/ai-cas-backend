@@ -267,8 +267,15 @@ BinhLuanBaiKiemTra.hasMany(BinhLuanBaiKiemTra, {
   as: "binh_luan_phan_hoi"
 });
 
+NguoiDung.hasMany(BinhLuanBaiKiemTra, {
+  as: "cac_binh_luan",
+  foreignKey: "ma_nguoi_dung"
+});
 
-
+BinhLuanBaiKiemTra.belongsTo(BinhLuanBaiKiemTra, {
+  as: "binh_luan_cha",
+  foreignKey: "ma_binh_luan_goc"
+});
 
 
 /**
