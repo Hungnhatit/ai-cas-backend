@@ -1,3 +1,6 @@
+import BinhLuanBaiKiemTra from "../../model/test/test-comment.model.js";
+import NguoiDung from "../../model/user.model.js";
+
 /**
  * Create or reply a comment
  */
@@ -34,35 +37,84 @@ export const createComment = async (req, res) => {
 /**
  * Get comments by test ID
  */
+// sử dụng đệ quy
 export const getCommentsByTestId = async (req, res) => {
   try {
-    const { testId } = req.params;
+    const { test_id } = req.params;
 
-    const comments = await BinhLuanBaiKiemTra.findAll({
-      where: { ma_kiem_tra: testId, ma_binh_luan_goc: null },
+    // 1. Lấy toàn bộ bình luận của bài kiểm tra
+    const allComments = await BinhLuanBaiKiemTra.findAll({
+      where: { ma_kiem_tra: test_id },
       include: [
-        { model: NguoiDung, as: "nguoi_dung", attributes: ["ma_nguoi_dung", "ten", "email"] },
+        {
+          model: NguoiDung,
+          as: "nguoi_dung",
+          attributes: ["ma_nguoi_dung", "ten", "email"]
+        },
         {
           model: BinhLuanBaiKiemTra,
-          as: "binh_luan_phan_hoi",
+          as: "binh_luan_cha",
           include: [
-            { model: NguoiDung, as: "nguoi_dung", attributes: ["ma_nguoi_dung", "ten", "email"] }
+            {
+              model: NguoiDung,
+              as: "nguoi_dung",
+              attributes: ["ma_nguoi_dung", "ten"]
+            }
           ]
         }
       ],
       order: [["ngay_tao", "ASC"]]
     });
 
+    // 2. Xây cây bình luận vô hạn cấp
+    const buildTree = (comments) => {
+      const map = {};
+      const roots = [];
+
+      comments.forEach((c) => {
+        map[c.ma_binh_luan] = {
+          ...c,
+          binh_luan_phan_hoi: []
+        };
+      });
+
+      comments.forEach((c) => {
+        if (c.ma_binh_luan_goc === null) {
+          roots.push(map[c.ma_binh_luan]);
+        } else {
+          if (map[c.ma_binh_luan_goc]) {
+            map[c.ma_binh_luan_goc].binh_luan_phan_hoi.push(
+              map[c.ma_binh_luan]
+            );
+          }
+        }
+      });
+
+      return roots;
+    };
+
+    const formatted = allComments.map(c => ({
+      ...c.dataValues,
+      reply_to_user_id: c.binh_luan_cha?.nguoi_dung?.ma_nguoi_dung || null,
+      reply_to_user_name: c.binh_luan_cha?.nguoi_dung?.ten || null
+    }));
+
+    const commentTree = buildTree(formatted);
+
     return res.status(200).json({
       success: true,
-      message: `Comments fetched successfully for test ID ${testId}`,
-      data: comments
+      message: `Get comments tree for test ${test_id} successfully`,
+      data: commentTree
     });
+
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ success: false, message: "Internal server error" });
+    console.error("Lỗi lấy comment:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error"
+    });
   }
-}
+};
 
 /**
  * Update a comment
