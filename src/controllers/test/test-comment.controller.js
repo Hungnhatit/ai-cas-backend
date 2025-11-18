@@ -42,7 +42,7 @@ export const getCommentsByTestId = async (req, res) => {
   try {
     const { test_id } = req.params;
 
-    // 1. Lấy toàn bộ bình luận của bài kiểm tra
+    // get all test comments
     const allComments = await BinhLuanBaiKiemTra.findAll({
       where: { ma_kiem_tra: test_id },
       include: [
@@ -66,7 +66,9 @@ export const getCommentsByTestId = async (req, res) => {
       order: [["ngay_tao", "ASC"]]
     });
 
-    // 2. Xây cây bình luận vô hạn cấp
+    const totalComments = allComments.length;
+
+    // build an infinite level comment tree
     const buildTree = (comments) => {
       const map = {};
       const roots = [];
@@ -104,6 +106,7 @@ export const getCommentsByTestId = async (req, res) => {
     return res.status(200).json({
       success: true,
       message: `Get comments tree for test ${test_id} successfully`,
+      total_comments: totalComments,
       data: commentTree
     });
 
