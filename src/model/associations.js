@@ -45,21 +45,21 @@ TienDoNguoiDung.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_d
 NguoiDung.hasMany(KetQua, { foreignKey: "ma_nguoi_dung", as: "ket_qua" }); // results
 KetQua.belongsTo(NguoiDung, { foreignKey: "ma_nguoi_dung", as: "nguoi_dung" });
 
-NguoiDung.hasOne(GiangVien, {
-  foreignKey: 'ma_nguoi_dung',
-  as: 'giang_vien'
-});
+// NguoiDung.hasOne(GiangVien, {
+//   foreignKey: 'ma_nguoi_dung',
+//   as: 'giang_vien'
+// });
 
-NguoiDung.hasOne(HocVien, {
-  foreignKey: 'ma_nguoi_dung',
-  as: 'hoc_vien'
-});
+// NguoiDung.hasOne(HocVien, {
+//   foreignKey: 'ma_nguoi_dung',
+//   as: 'hoc_vien'
+// });
 
-// models/Instructor.js
-GiangVien.belongsTo(NguoiDung, {
-  foreignKey: 'ma_nguoi_dung',
-  as: 'nguoi_dung'
-})
+// // models/Instructor.js
+// GiangVien.belongsTo(NguoiDung, {
+//   foreignKey: 'ma_nguoi_dung',
+//   as: 'nguoi_dung'
+// })
 
 
 
