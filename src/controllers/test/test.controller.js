@@ -464,18 +464,32 @@ export const updateTest = async (req, res) => {
       });
     }
 
-    // ✅ Cập nhật thông tin cơ bản của bài kiểm tra
+    // update basic information of the test
     await test.update({
       tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han,
       so_lan_lam_toi_da, trang_thai,
     }, { transaction });
 
-    // ✅ Cập nhật hoặc thêm mới từng phần (section)
+    // update or add new section   
+
+    const existingSections = await PhanKiemTra.findAll({
+      where: { ma_kiem_tra: test.ma_kiem_tra },
+      transaction
+    });
+
+    const clientSectionIds = phan.filter(s => s.ma_phan).map(s => s.ma_phan);
+
+    // Xoá những section không còn trong client
+    for (const section of existingSections) {
+      if (!clientSectionIds.includes(section.ma_phan)) {
+        await section.destroy({ transaction });
+      }
+    }
+
     for (const section of phan) {
       let updatedSection;
 
       if (section.ma_phan) {
-        // Nếu có ID => update
         updatedSection = await PhanKiemTra.findByPk(section.ma_phan, { transaction });
         if (updatedSection) {
           await updatedSection.update({
@@ -564,9 +578,6 @@ export const updateTest = async (req, res) => {
     });
   }
 };
-
-
-
 
 /**
  * Delete test: soft delete and force delete
