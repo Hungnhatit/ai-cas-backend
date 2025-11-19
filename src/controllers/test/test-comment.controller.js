@@ -152,14 +152,15 @@ export const updateComment = async (req, res) => {
  */
 export const deleteComment = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { comment_id } = req.params;
+    const ma_nguoi_dung = req.user.ma_nguoi_dung;
 
-    const comment = await BinhLuanBaiKiemTra.findByPk(id);
+    const comment = await BinhLuanBaiKiemTra.findByPk(comment_id);
     if (!comment) {
       return res.status(404).json({ success: false, message: "Comment not found" });
     }
 
-    await comment.destroy(); // thanks to ON DELETE CASCADE, replies are deleted automatically
+    await comment.destroy();
 
     return res.status(200).json({
       success: true,
