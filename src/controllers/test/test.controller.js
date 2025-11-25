@@ -1,5 +1,5 @@
 import { sequelize } from '../../config/database.js';
-import CauHoiKiemTra from '../../model/test/test-question.model.js';
+import CauHoiTracNghiem from '../../model/test/test-multichoice.model.js';
 import BaiKiemTra from '../../model/test/test.model.js'
 import LanLamBaiKiemTra from '../../model/test/test-attempt.model.js'
 import GiangVien from '../../model/instructor/instructor.model.js';
@@ -7,119 +7,193 @@ import GiaoBaiKiemTra from '../../model/test/test-assignment.model.js';
 import PhanKiemTra from '../../model/test/test-section.model.js';
 import DanhMucBaiKiemTra from '../../model/category.model.js';
 import { Op } from 'sequelize';
+import { CauHoi } from '../../model/associations.js';
+import LuaChonTracNghiem from '../../model/test/test-multichoice-option.model.js';
+import CauHoiTuLuan from '../../model/test/test-prompt.model.js';
+import BaiKiemTraDanhMuc from '../../model/test/test-category.model.js';
 
-/**
- * Create new test
- */
 export const createTest = async (req, res) => {
   const t = await sequelize.transaction();
   try {
-    const { ma_giang_vien, tieu_de, mo_ta, thoi_luong, so_phan = 0, sections = [], danh_muc, tong_diem, so_lan_lam_toi_da, do_kho, trang_thai, ngay_bat_dau, ngay_ket_thuc, cau_hoi = []
+    const {
+      ma_giang_vien,
+      tieu_de,
+      mo_ta,
+      thoi_luong,
+      sections = [],
+      danh_muc = [],
+      tong_diem,
+      so_lan_lam_toi_da = 1,
+      do_kho,
+      trang_thai = "ban_nhap",
+      ngay_bat_dau = null,
+      ngay_ket_thuc = null,
+      cau_hoi: rootQuestions = []
     } = req.body;
 
-    // validate required fields
-    if (!ma_giang_vien || !tieu_de || !thoi_luong || tong_diem === undefined || tong_diem === null) {
+    if (!ma_giang_vien || !tieu_de || !thoi_luong || tong_diem === undefined) {
       return res.status(400).json({
         status: 'error',
-        message: 'Missing required fileds, please check again!',
-        data: {
-          'ma_giang_vien': ma_giang_vien,
-          'tieu_de': tieu_de,
-          'thoi_luong': thoi_luong,
-          'tong_diem': tong_diem,
-        }
+        message: 'Missing required fields!',
+        data: { ma_giang_vien, tieu_de, thoi_luong, tong_diem }
       });
     }
 
+    // 1) CREATE TEST
     const test = await BaiKiemTra.create({
       ma_giang_vien,
       tieu_de,
       mo_ta: mo_ta || null,
       thoi_luong,
       tong_diem,
-      so_phan,
-      so_lan_lam_toi_da: so_lan_lam_toi_da || 1,
-      do_kho: do_kho || "de",
-      trang_thai: trang_thai || "ban_nhap",
-      ngay_bat_dau: ngay_bat_dau || null,
-      ngay_ket_thuc: ngay_ket_thuc || null,
+      // so_phan,
+      so_lan_lam_toi_da,
+      do_kho,
+      trang_thai,
+      ngay_bat_dau,
+      ngay_ket_thuc,
       ngay_tao: new Date(),
       ngay_cap_nhat: new Date(),
+      danh_muc: danh_muc.length ? danh_muc : null
     }, { transaction: t });
 
-    if (Array.isArray(danh_muc) && danh_muc.length > 0) {
-      const insertData = danh_muc.map(ma => ({
+    // 1a. Lưu danh mục vào bảng trung gian nếu có
+    if (Array.isArray(danh_muc) && danh_muc.length) {
+      const danhMucRows = danh_muc.map(id => ({
         ma_kiem_tra: test.ma_kiem_tra,
-        ma_danh_muc: ma
+        ma_danh_muc: id
       }));
-      await sequelize.getQueryInterface().bulkInsert('bai_kiem_tra_danh_muc', insertData, { transaction: t });
+      await BaiKiemTraDanhMuc.bulkCreate(danhMucRows, { transaction: t });
     }
 
-    let createdSections = [];
-    if (sections && Array.isArray(sections) && sections.length > 0) {
-      const formatSections = sections.map((section, index) => ({
+    // 2) CREATE SECTIONS
+    const createdSections = [];
+    const sectionMap = {}; // map index -> ma_phan
+
+    for (let i = 0; i < sections.length; i++) {
+      const s = sections[i];
+      const sec = await PhanKiemTra.create({
         ma_kiem_tra: test.ma_kiem_tra,
-        ten_phan: section.ten_phan || `Phần ${index + 1}`,
-        mo_ta: section.mo_ta || null,
-        loai_phan: section.loai_phan || 'trac_nghiem',
-        thu_tu: section.thu_tu || index + 1,
-        diem_toi_da: section.diem_toi_da || 10,
-        thoi_gian_gioi_han: section.thoi_gian_gioi_han || null,
-        tieu_chi_danh_gia: section.tieu_chi_danh_gia || null,
+        ten_phan: s.ten_phan || `Phần ${i + 1}`,
+        mo_ta: s.mo_ta || null,
+        loai_phan: s.loai_phan,
+        thu_tu: s.thu_tu || i + 1,
+        diem_toi_da: s.diem || 0,
         ngay_tao: new Date(),
-        ngay_cap_nhat: new Date(),
-      }));
+        ngay_cap_nhat: new Date()
+      }, { transaction: t });
 
-      createdSections = await PhanKiemTra.bulkCreate(formatSections, {
-        transaction: t,
-        returning: true
-      });
+      createdSections.push(sec);
+      sectionMap[i] = sec.ma_phan;
     }
 
-    // console.log('phankiemtra: ', createdSections);
-    // console.log('cauhoikiemtra: ', cau_hoi);
+    for (let i = 0; i < createdSections.length; i++) {
+      const section = createdSections[i];
+      const questions = sections[i].cau_hoi || [];
+      const sectionPoint = questions.reduce((sum, q) => sum + (q.diem || 0), 0);
+      section.diem_toi_da = sectionPoint;
+      await section.save({ transaction: t });
+    }
 
-    if (cau_hoi.length > 0) {
-      const formattedQuestions = cau_hoi.map((q) => {
-        const section = createdSections.find(s =>
-          s.loai_phan === q.loai
-        );
-        // console.log('section: ', section.ma_phan);
+    // 3) CREATE QUESTIONS (CHA)
+    const allQuestions = sections.length ? sections.flatMap((s, i) =>
+      s.cau_hoi.map(q => ({
+        tieu_de: q.cau_hoi,
+        ma_phan: sectionMap[i],
+        loai_cau_hoi: q.loai ?? s.loai_phan,
+        diem: q.diem || 0,
+        mo_ta: q.mo_ta || null,
+        ngay_tao: new Date(),
+        ngay_cap_nhat: new Date()
+      }))
+    ) : rootQuestions.map(q => ({
+      tieu_de,
+      ma_phan: null,
+      cau_hoi: q.cau_hoi,
+      loai_cau_hoi: q.loai,
+      diem: q.diem || 0,
+      mo_ta: q.mo_ta || null,
+      ngay_tao: new Date(),
+      ngay_cap_nhat: new Date()
+    }));
 
-        return {
-          ma_bai_kiem_tra: test.ma_kiem_tra,
-          ma_phan: section ? section.ma_phan : null,
-          cau_hoi: q.cau_hoi,
-          loai: q.loai,
-          lua_chon: q.lua_chon || [],
-          dap_an_dung: q.dap_an_dung,
-          diem: q.diem || 1,
+    
+    const createdQuestions = await CauHoi.bulkCreate(allQuestions, { transaction: t, returning: true });       
+
+    // 4) SPLIT TN/TL & INSERT CHOICES
+    const tracNghiemRows = [];
+    const tuLuanRows = [];
+    const luaChonRows = [];
+
+    let qIndex = 0;
+    const questionListFlat = sections.length ? sections.flatMap(s => s.cau_hoi) : rootQuestions;
+
+    for (let q of questionListFlat) {
+      const inserted = createdQuestions[qIndex];
+      qIndex++;
+
+      if (q.loai === 'trac_nghiem') {
+        tracNghiemRows.push({
+          // ma_bai_kiem_tra: test.ma_kiem_tra,
+          // ma_phan: inserted.ma_phan,
+          ma_cau_hoi_trac_nghiem: inserted.ma_cau_hoi,
+          dap_an_dung: typeof q.dap_an_dung === 'number' ? (q.lua_chon[q.dap_an_dung] || null) : q.dap_an_dung,
           ngay_tao: new Date(),
-          ngay_cap_nhat: new Date(),
+          ngay_cap_nhat: new Date()
+          // cau_hoi: q.cau_hoi,
+          // loai: q.loai,
+          // diem: q.diem || 0,
+          // lua_chon: q.lua_chon || null,
+          // giai_thich: q.mo_ta || null,
+        });
+
+        if (Array.isArray(q.lua_chon)) {
+          q.lua_chon.forEach((opt, optIndex) => {
+            luaChonRows.push({
+              ma_cau_hoi_trac_nghiem: inserted.ma_cau_hoi,
+              noi_dung: opt,
+              la_dap_an_dung: optIndex === q.dap_an_dung,
+              ngay_tao: new Date(),
+              ngay_cap_nhat: new Date()
+            });
+          });
         }
-      });
-      await CauHoiKiemTra.bulkCreate(formattedQuestions, { transaction: t });
-      console.log(formattedQuestions)
+
+      } else if (q.loai === 'tu_luan') {
+        tuLuanRows.push({
+          ma_cau_hoi_tu_luan: inserted.ma_cau_hoi,
+          giai_thich: q.mo_ta || null,
+        });
+      }
     }
+
+    const testPoint = createdSections.reduce((sum, section) => sum + (section.diem_toi_da || 0), 0);
+    test.tong_diem = testPoint;
+    await test.save({ transaction: t });
+
+    if (tracNghiemRows.length) await CauHoiTracNghiem.bulkCreate(tracNghiemRows, { transaction: t });
+    if (luaChonRows.length) await LuaChonTracNghiem.bulkCreate(luaChonRows, { transaction: t });
+    if (tuLuanRows.length) await CauHoiTuLuan.bulkCreate(tuLuanRows, { transaction: t });
 
     await t.commit();
 
     return res.status(201).json({
       status: 'success',
       message: 'Test created successfully',
-      data: test
+      data: { ma_kiem_tra: test.ma_kiem_tra }
     });
 
   } catch (error) {
-    console.log(error);
+    console.error(error);
     await t.rollback();
     return res.status(500).json({
       status: 'error',
-      message: `Internal server error while creating test: ${error}`,
+      message: 'Internal server error while creating test',
       error: error.message
-    })
+    });
   }
-}
+};
+
 
 /**
  * Assign test
@@ -181,18 +255,24 @@ export const getTestById = async (req, res) => {
 
     const test = await BaiKiemTra.findByPk(test_id, {
       include: [
-        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
-        { model: DanhMucBaiKiemTra, as: 'danh_muc_bai_kiem_tra', attributes: ['ma_danh_muc', 'ten_danh_muc'] },
-        {
-          model: GiangVien,
-          as: 'giang_vien',
-          attributes: ['ten']
-        },
         {
           model: PhanKiemTra, as: 'phan_kiem_tra', include: [
-            { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
+            {
+              model: CauHoi, as: 'cau_hoi', include: [
+                {
+                  model: CauHoiTracNghiem, as: 'cau_hoi_trac_nghiem', include: [
+                    { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem' },
+                  ]
+                },
+                {
+                  model: CauHoiTuLuan, as: 'cau_hoi_tu_luan'
+                },
+              ]
+            }
           ]
-        }
+        },
+        { model: DanhMucBaiKiemTra, as: 'danh_muc', attributes: ['ten_danh_muc'], through: { attributes: [] } },
+        { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] }
       ]
     });
 
@@ -203,21 +283,10 @@ export const getTestById = async (req, res) => {
       });
     }
 
-    const parsedTest = {
-      ...test.toJSON(),
-      cau_hoi: test.cau_hoi_kiem_tra.map((q) => ({
-        ...q.toJSON(),
-        lua_chon:
-          typeof q.lua_chon === "string"
-            ? JSON.parse(q.lua_chon) || []
-            : q.lua_chon,
-      })),
-    };
-
     return res.status(200).json({
       success: true,
       message: 'Fetch test successfully!',
-      data: parsedTest
+      data: test
     })
 
   } catch (error) {
@@ -248,14 +317,26 @@ export const getTests = async (req, res) => {
       where.tieu_de = { [Op.like]: `%${query}%` };
     }
 
-    if (category) {
-      where.danh_muc = { [Op.like]: `%${category}%` };
-    }
+    const categoryFilter = category
+      ? {
+        model: DanhMucBaiKiemTra,
+        as: 'danh_muc',
+        where: { ten_danh_muc: { [Op.like]: `%${category}%` } },
+        attributes: ['ma_danh_muc', 'ten_danh_muc'],
+        through: { attributes: [] },
+        required: true
+      }
+      : {
+        model: DanhMucBaiKiemTra,
+        as: 'danh_muc',
+        attributes: ['ma_danh_muc', 'ten_danh_muc'],
+        through: { attributes: [] },
+        required: false
+      }
 
     const totalItems = await BaiKiemTra.count({
       where,
-      distinct: true,
-      col: 'ma_kiem_tra'
+      include: category ? [categoryFilter] : []
     });
 
     const totalPages = Math.ceil(totalItems / limit);
@@ -263,9 +344,9 @@ export const getTests = async (req, res) => {
     const tests = await BaiKiemTra.findAll({
       where,
       include: [
+        { model: PhanKiemTra, as: 'phan_kiem_tra', attributes: ['ma_phan', 'ten_phan'] },
         { model: GiangVien, as: 'giang_vien', attributes: ['ten', 'email'] },
-        { model: DanhMucBaiKiemTra, as: 'danh_muc_bai_kiem_tra', attributes: ['ma_danh_muc', 'ten_danh_muc'] },
-        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra', attributes: ['ma_cau_hoi', 'ma_phan', 'cau_hoi'] }
+        categoryFilter,
       ],
       order: [['ngay_tao', 'DESC']],
       offset,
@@ -376,8 +457,25 @@ export const getTestsByInstructorId = async (req, res) => {
     const tests = await BaiKiemTra.findAll({
       where: { ma_giang_vien: instructor_id },
       include: [
-        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' },
-        { model: PhanKiemTra, as: 'phan_kiem_tra' }
+        {
+          model: PhanKiemTra, as: 'phan_kiem_tra', include: [
+            {
+              model: CauHoi, as: 'cau_hoi', include: [
+                {
+                  model: CauHoiTracNghiem, as: 'cau_hoi_trac_nghiem', include: [
+                    { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem' }
+                  ]
+                },
+                { model: CauHoiTuLuan, as: 'cau_hoi_tu_luan' }
+              ]
+            }
+          ]
+        },
+        {
+          model: DanhMucBaiKiemTra,
+          as: 'danh_muc',
+          through: { attributes: [] }
+        }
       ],
       order: [['ngay_tao', 'DESC']]
     });
@@ -479,7 +577,7 @@ export const updateTest = async (req, res) => {
 
     const clientSectionIds = phan.filter(s => s.ma_phan).map(s => s.ma_phan);
 
-    // Xoá những section không còn trong client
+    // delete sections that are no longer in the client
     for (const section of existingSections) {
       if (!clientSectionIds.includes(section.ma_phan)) {
         await section.destroy({ transaction });
@@ -498,7 +596,7 @@ export const updateTest = async (req, res) => {
             thu_tu: section.thu_tu || 1,
           }, { transaction });
         } else {
-          // Nếu không tìm thấy section cũ (vì bị xóa chẳng hạn)
+          // create new section if not exist
           updatedSection = await PhanKiemTra.create({
             ma_kiem_tra: test.ma_kiem_tra,
             ten_phan: section.ten_phan,
@@ -507,7 +605,7 @@ export const updateTest = async (req, res) => {
           }, { transaction });
         }
       } else {
-        // Nếu không có ID => tạo mới
+        // if there is no ID => create new
         updatedSection = await PhanKiemTra.create({
           ma_kiem_tra: test.ma_kiem_tra,
           ten_phan: section.ten_phan,
@@ -516,16 +614,16 @@ export const updateTest = async (req, res) => {
         }, { transaction });
       }
 
-      // ✅ Cập nhật câu hỏi trong mỗi phần
+      // cập nhật câu hỏi trong mỗi phần
       if (section.cau_hoi?.length > 0) {
         for (const q of section.cau_hoi) {
           if (q.ma_cau_hoi) {
-            // Update nếu có ID
-            const existingQ = await CauHoiKiemTra.findByPk(q.ma_cau_hoi, { transaction });
+            // update if ID available
+            const existingQ = await CauHoiTracNghiem.findByPk(q.ma_cau_hoi, { transaction });
             if (existingQ) {
               await existingQ.update({
                 cau_hoi: q.cau_hoi,
-                loai: q.loai,
+                loai_cau_hoi: q.loai,
                 lua_chon: q.lua_chon || [],
                 dap_an_dung: q.dap_an_dung,
                 diem: q.diem,
@@ -533,8 +631,7 @@ export const updateTest = async (req, res) => {
               }, { transaction });
             }
           } else {
-
-            await CauHoiKiemTra.create({
+            await CauHoiTracNghiem.create({
               ma_bai_kiem_tra: test.ma_kiem_tra,
               ma_phan: updatedSection.ma_phan,
               cau_hoi: q.cau_hoi,
@@ -551,13 +648,13 @@ export const updateTest = async (req, res) => {
 
     await transaction.commit();
 
-    // ✅ Lấy lại dữ liệu đầy đủ sau khi cập nhật
+    // get full data back after update
     const updatedTest = await BaiKiemTra.findByPk(test_id, {
       include: [
         {
           model: PhanKiemTra,
           as: "phan_kiem_tra",
-          include: [{ model: CauHoiKiemTra, as: "cau_hoi_kiem_tra" }],
+          include: [{ model: CauHoiTracNghiem, as: "cau_hoi_trac_nghiem" }],
         },
       ],
     });
@@ -607,7 +704,7 @@ export const deleteTest = async (req, res) => {
     }
 
     await sequelize.transaction(async (t) => {
-      await CauHoiKiemTra.destroy({
+      await CauHoiTracNghiem.destroy({
         where: { ma_bai_kiem_tra: test_id },
         transaction: t
       });
