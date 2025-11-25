@@ -1,7 +1,88 @@
 import { sequelize } from "../../config/database.js";
 import LanLamBaiKiemTra from "../../model/test/test-attempt.model.js";
-import CauHoiKiemTra from "../../model/test/test-question.model.js";
+import LuaChonTracNghiem from "../../model/test/test-multichoice-option.model.js";
+import CauHoiTracNghiem from "../../model/test/test-multichoice.model.js";
+import CauHoiTuLuan from "../../model/test/test-prompt.model.js";
+import CauHoi from "../../model/test/test-question.model.js";
+import PhanKiemTra from "../../model/test/test-section.model.js";
+import CauTraLoiHocVien from "../../model/test/test-student-answer.model.js";
 import BaiKiemTra from '../../model/test/test.model.js';
+
+/**
+ * Get all the tests the student has taken
+ */
+export const getTestsAttemptByStudent = async (req, res) => {
+  try {
+    const { student_id } = req.params;
+    const attempts = await LanLamBaiKiemTra.findAll({
+      where: { ma_hoc_vien: student_id },
+      attributes: ['ma_kiem_tra'],
+      include: [
+        { model: BaiKiemTra, as: 'bai_kiem_tra' }
+      ],
+      group: ['ma_kiem_tra']
+    });
+
+    const tests = attempts.map(item => item.bai_kiem_tra);
+
+    return res.status(200).json({
+      success: true,
+      count: tests.length,
+      data: tests
+    });
+
+  } catch (error) {
+    console.error("Error get tests:", error);
+    return res.status(500).json({ success: false, message: "Server error" });
+  }
+}
+
+/**
+ * Get attempt by student ID
+ * Description: student test history
+ */
+export const getAttemptByStudentID = async (req, res) => {
+  try {
+    const { student_id, test_id } = req.params;
+    if (!student_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'student_id is required'
+      });
+    }
+
+    const attempts = await LanLamBaiKiemTra.findAll({
+      where: {
+        ma_hoc_vien: student_id,
+        ma_kiem_tra: test_id
+      },
+      include: [
+        { model: BaiKiemTra, as: 'bai_kiem_tra' }
+      ],
+      order: [['ngay_tao', 'DESC']]
+    });
+
+    if (!attempts) {
+      return res.status(404).json({
+        message: 'Attempt not found'
+      })
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Fetch ${attempts.length} attempts`,
+      data: attempts
+    });
+  } catch (error) {
+    console.error("Error when fetch test attempt by student ID:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching test attempt",
+      error: error.message,
+    });
+  }
+}
+
 
 /**
  * Start test attempt
@@ -10,6 +91,7 @@ import BaiKiemTra from '../../model/test/test.model.js';
 export const startTestAttempt = async (req, res) => {
   try {
     const { test_id, student_id } = req.body;
+    const { answers } = req.body;
 
     console.log(test_id, student_id);
     if (!test_id || !student_id) {
@@ -54,9 +136,27 @@ export const submitTestAnswers = async (req, res) => {
       })
     }
 
-    await attempt.update({
-      cau_tra_loi: answers
+    const savePromises = Object.entries(answers).map(async ([ma_cau_hoi, tra_loi]) => {
+      const existing = await CauTraLoiHocVien.findOne({
+        where: {
+          ma_lan_lam: attempt.ma_lan_lam,
+          ma_cau_hoi: ma_cau_hoi
+        }
+      });
+
+      if (existing) {
+        return existing.update({ tra_loi });
+      } else {
+        return CauTraLoiHocVien.create({
+          ma_lan_lam: attempt.ma_lan_lam,
+          ma_cau_hoi: ma_cau_hoi,
+          tra_loi,
+          diem: 0
+        })
+      }
     });
+
+    await Promise.all(savePromises);
 
     return res.status(200).json({
       success: true,
@@ -83,7 +183,11 @@ export const submitTestAttempt = async (req, res) => {
       });
     }
 
-    const attempt = await LanLamBaiKiemTra.findByPk(testAttempt_id);
+    const attempt = await LanLamBaiKiemTra.findByPk(testAttempt_id, {
+      include: [
+        { model: CauTraLoiHocVien, as: 'cau_tra_loi_hoc_vien' }
+      ]
+    });
 
     if (!attempt) {
       return res.status(404).json({
@@ -97,11 +201,25 @@ export const submitTestAttempt = async (req, res) => {
       });
     }
 
+    // get test information with sections and questions
     const test = await BaiKiemTra.findByPk(attempt.ma_kiem_tra, {
       include: [
-        { model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra' }
+        {
+          model: PhanKiemTra, as: 'phan_kiem_tra', include: [
+            {
+              model: CauHoi, as: 'cau_hoi', include: [
+                {
+                  model: CauHoiTracNghiem, as: 'cau_hoi_trac_nghiem', include: [
+                    { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem', attributes: ['ma_lua_chon', 'ma_cau_hoi_trac_nghiem', 'la_dap_an_dung'] }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       ]
     });
+
 
     if (!test) {
       return res.status(404).json({
@@ -109,18 +227,54 @@ export const submitTestAttempt = async (req, res) => {
       });
     }
 
-    console.log(attempt)
+    // convert student answers information into key-value format
+    const userAnswers = {};
+    // const questionAnswer = {}
+    (attempt.cau_tra_loi_hoc_vien || []).forEach((answer) => {
+      userAnswers[answer.ma_cau_hoi] = answer.tra_loi;
+    });
 
-    const userAnswers = JSON.parse(attempt.cau_tra_loi || '{}');
 
     let totalScore = 0;
+    const savePromises = [];
 
-    test.cau_hoi_kiem_tra.forEach((q) => {
-      const userAnswer = userAnswers?.[q.ma_cau_hoi];
-      if (userAnswer?.toString() === q.dap_an_dung?.toString()) {
-        totalScore += q.diem;
-      }
-    });
+    test.phan_kiem_tra.forEach((section) => {
+      section.cau_hoi.forEach((question, index) => {
+        const userAnswer = userAnswers[question.ma_cau_hoi].toString() || '';
+        const correctChoice = question
+          .cau_hoi_trac_nghiem
+          .lua_chon_trac_nghiem
+          .find(option => option.la_dap_an_dung === 1);
+        let score = 0;
+
+        if (correctChoice && userAnswer === correctChoice.ma_lua_chon.toString()) {
+          console.log('true')
+          score = question.diem || 0;
+          totalScore += score;
+        }
+
+        savePromises.push(
+          (async () => {
+            const existing = await CauTraLoiHocVien.findOne({
+              where: { ma_lan_lam: attempt.ma_lan_lam, ma_cau_hoi: question.ma_cau_hoi }
+            });
+
+            if (existing) {
+              await existing.update({ tra_loi: userAnswer, diem: score });
+            } else {
+              await CauTraLoiHocVien.create({
+                ma_lan_lam: attempt.ma_lan_lam,
+                ma_cau_hoi: question.ma_cau_hoi,
+                tra_loi: userAnswer,
+                diem: score
+              });
+            }
+          })()
+        );
+      })
+    })
+
+    await Promise.all(savePromises)
 
     attempt.diem = totalScore;
     attempt.trang_thai = "da_nop";
@@ -160,11 +314,31 @@ export const getTestAttemptById = async (req, res) => {
         {
           model: BaiKiemTra, as: 'bai_kiem_tra', include: [
             {
-              model: CauHoiKiemTra, as: 'cau_hoi_kiem_tra', attributes: ["ma_cau_hoi", "cau_hoi", "loai", "lua_chon", "dap_an_dung", "diem",
-              ],
-            }
+              model: PhanKiemTra, as: 'phan_kiem_tra', include: [
+                {
+                  model: CauHoi, as: 'cau_hoi', include: [
+                    {
+                      model: CauHoiTracNghiem,
+                      as: 'cau_hoi_trac_nghiem',
+                      include: [
+                        { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem' }
+                      ]
+                    },
+                    {
+                      model: CauHoiTuLuan,
+                      as: 'cau_hoi_tu_luan',
+                    },
+                  ]
+                }
+              ]
+            },
+
           ]
-        }
+        },
+        {
+          model: CauTraLoiHocVien,
+          as: 'cau_tra_loi_hoc_vien',
+        },
       ]
     });
 
@@ -176,22 +350,17 @@ export const getTestAttemptById = async (req, res) => {
     }
 
     const parsedAttempt = attempt.toJSON();
-    // console.log(parsedAttempt);
-    if (parsedAttempt.bai_kiem_tra?.cau_hoi_kiem_tra) {
-      parsedAttempt.bai_kiem_tra.cau_hoi_kiem_tra = parsedAttempt.bai_kiem_tra.cau_hoi_kiem_tra.map((q) => ({
-        ...q,
-        lua_chon:
-          typeof q.lua_chon === "string"
-            ? (() => {
-              try {
-                return JSON.parse(q.lua_chon);
-              } catch {
-                return [];
-              }
-            })()
-            : q.lua_chon,
-      }));
-    }
+    parsedAttempt.bai_kiem_tra?.phan_kiem_tra?.forEach((part) => {
+      part.cau_hoi?.forEach((q) => {
+        if (q.cau_hoi_trac_nghiem?.lua_chon && typeof q.cau_hoi_trac_nghiem.lua_chon === 'string') {
+          try {
+            q.cau_hoi_trac_nghiem.lua_chon = JSON.parse(q.cau_hoi_trac_nghiem.lua_chon);
+          } catch {
+            q.cau_hoi_trac_nghiem.lua_chon = [];
+          }
+        }
+      });
+    });
 
     return res.status(200).json({
       success: true,
@@ -208,6 +377,72 @@ export const getTestAttemptById = async (req, res) => {
     });
   }
 }
+
+export const getTestAttemptByID = async (req, res) => {
+  try {
+    const { attempt_id } = req.params;
+
+    if (!attempt_id) {
+      return res.status(400).json({
+        success: false,
+        message: 'attempt_id is required'
+      });
+    }
+
+    const attempt = await LanLamBaiKiemTra.findOne({
+      where: { ma_lan_lam: attempt_id },
+      include: [
+        {
+          model: BaiKiemTra, as: 'bai_kiem_tra', include: [
+            {
+              model: PhanKiemTra, as: 'phan_kiem_tra', include: [
+                {
+                  model: CauHoi, as: 'cau_hoi', include: [
+                    {
+                      model: CauHoiTracNghiem,
+                      as: 'cau_hoi_trac_nghiem',
+                      include: [
+                        { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem' }
+                      ]
+                    },
+                    {
+                      model: CauHoiTuLuan,
+                      as: 'cau_hoi_tu_luan',
+                    },
+                  ]
+                }
+              ]
+            },
+
+          ]
+        },
+        { model: CauTraLoiHocVien, as: 'cau_tra_loi_hoc_vien' },
+      ]
+    });
+
+    if (!attempt) {
+      return res.status(404).json({
+        success: false,
+        message: 'No attempt found with this ID'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Fetched test attempt successfully",
+      data: attempt,
+    });
+
+  } catch (error) {
+    console.error("Error in getTestAttemptById:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error while fetching test attempt",
+      error: error.message,
+    });
+  }
+}
+
 
 /**
  * Get test attempts by test_id & student_id
@@ -271,7 +506,7 @@ export const abortTestAttempt = async (req, res) => {
       lock: t.LOCK.UPDATE,
       transaction: t
     });
-    
+
     if (!attempt) {
       await t.rollback();
       return res.status(404).json({
