@@ -17,10 +17,6 @@ const LanLamBaiKiemTra = sequelize.define("LanLamBaiKiemTra", {
     type: DataTypes.INTEGER.UNSIGNED,
     allowNull: true,
   },
-  cau_tra_loi: { // answers (JSON)
-    type: DataTypes.JSON,
-    allowNull: true,
-  },
   diem: { // score
     type: DataTypes.INTEGER,
     defaultValue: 0,
