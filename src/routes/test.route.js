@@ -5,8 +5,11 @@ import { authenticate } from '../middlewares/checkAuth.js';
 const router = express.Router();
 
 router.post('/create', createTest);
+
 router.get('/instructor/:instructor_id', getTestsByInstructorId);
+
 router.get('/:test_id/student/:student_id/results', getTestResults);
+
 router.get('/all-tests', getTests);
 
 router.get('/student/:student_id', getTestsForStudent);
