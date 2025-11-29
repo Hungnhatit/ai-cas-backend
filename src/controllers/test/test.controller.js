@@ -11,6 +11,8 @@ import { CauHoi } from '../../model/associations.js';
 import LuaChonTracNghiem from '../../model/test/test-multichoice-option.model.js';
 import CauHoiTuLuan from '../../model/test/test-prompt.model.js';
 import BaiKiemTraDanhMuc from '../../model/test/test-category.model.js';
+import { upsertChoices, upsertQuestion, upsertSection } from '../../helpers/test/test.helper.js';
+import { updateTestService } from '../../services/test/test.service.js';
 
 export const createTest = async (req, res) => {
   const t = await sequelize.transaction();
@@ -46,7 +48,6 @@ export const createTest = async (req, res) => {
       mo_ta: mo_ta || null,
       thoi_luong,
       tong_diem,
-      // so_phan,
       so_lan_lam_toi_da,
       do_kho,
       trang_thai,
@@ -117,8 +118,8 @@ export const createTest = async (req, res) => {
       ngay_cap_nhat: new Date()
     }));
 
-    
-    const createdQuestions = await CauHoi.bulkCreate(allQuestions, { transaction: t, returning: true });       
+
+    const createdQuestions = await CauHoi.bulkCreate(allQuestions, { transaction: t, returning: true });
 
     // 4) SPLIT TN/TL & INSERT CHOICES
     const tracNghiemRows = [];
@@ -193,7 +194,6 @@ export const createTest = async (req, res) => {
     });
   }
 };
-
 
 /**
  * Assign test
@@ -540,141 +540,32 @@ export const getTestResults = async (req, res) => {
  * Update test
  */
 export const updateTest = async (req, res) => {
-  const transaction = await BaiKiemTra.sequelize.transaction();
-  const { test_id } = req.params;
-  const ma_giang_vien = req.user.ma_nguoi_dung;
-  const {
-    tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han,
-    so_lan_lam_toi_da, trang_thai, phan = []
-  } = req.body;
-
   try {
-    const test = await BaiKiemTra.findOne({
-      where: { ma_kiem_tra: test_id, ma_giang_vien },
-      transaction,
-    });
+    const { test_id } = req.params;
+    const ma_giang_vien = req.user.ma_nguoi_dung;
+    const payload = req.body;
 
-    if (!test) {
-      await transaction.rollback();
-      return res.status(404).json({
-        success: false,
-        message: "Test not found or you don't have permission to update it.",
-      });
-    }
-
-    // update basic information of the test
-    await test.update({
-      tieu_de, mo_ta, thoi_luong, tong_diem, ngay_het_han,
-      so_lan_lam_toi_da, trang_thai,
-    }, { transaction });
-
-    // update or add new section   
-
-    const existingSections = await PhanKiemTra.findAll({
-      where: { ma_kiem_tra: test.ma_kiem_tra },
-      transaction
-    });
-
-    const clientSectionIds = phan.filter(s => s.ma_phan).map(s => s.ma_phan);
-
-    // delete sections that are no longer in the client
-    for (const section of existingSections) {
-      if (!clientSectionIds.includes(section.ma_phan)) {
-        await section.destroy({ transaction });
-      }
-    }
-
-    for (const section of phan) {
-      let updatedSection;
-
-      if (section.ma_phan) {
-        updatedSection = await PhanKiemTra.findByPk(section.ma_phan, { transaction });
-        if (updatedSection) {
-          await updatedSection.update({
-            ten_phan: section.ten_phan,
-            mo_ta: section.mo_ta,
-            thu_tu: section.thu_tu || 1,
-          }, { transaction });
-        } else {
-          // create new section if not exist
-          updatedSection = await PhanKiemTra.create({
-            ma_kiem_tra: test.ma_kiem_tra,
-            ten_phan: section.ten_phan,
-            mo_ta: section.mo_ta,
-            thu_tu: section.thu_tu || 1,
-          }, { transaction });
-        }
-      } else {
-        // if there is no ID => create new
-        updatedSection = await PhanKiemTra.create({
-          ma_kiem_tra: test.ma_kiem_tra,
-          ten_phan: section.ten_phan,
-          mo_ta: section.mo_ta,
-          thu_tu: section.thu_tu || 1,
-        }, { transaction });
-      }
-
-      // cập nhật câu hỏi trong mỗi phần
-      if (section.cau_hoi?.length > 0) {
-        for (const q of section.cau_hoi) {
-          if (q.ma_cau_hoi) {
-            // update if ID available
-            const existingQ = await CauHoiTracNghiem.findByPk(q.ma_cau_hoi, { transaction });
-            if (existingQ) {
-              await existingQ.update({
-                cau_hoi: q.cau_hoi,
-                loai_cau_hoi: q.loai,
-                lua_chon: q.lua_chon || [],
-                dap_an_dung: q.dap_an_dung,
-                diem: q.diem,
-                giai_thich: q.giai_thich,
-              }, { transaction });
-            }
-          } else {
-            await CauHoiTracNghiem.create({
-              ma_bai_kiem_tra: test.ma_kiem_tra,
-              ma_phan: updatedSection.ma_phan,
-              cau_hoi: q.cau_hoi,
-              loai: q.loai,
-              lua_chon: q.lua_chon || [],
-              dap_an_dung: q.dap_an_dung,
-              diem: q.diem,
-              giai_thich: q.giai_thich,
-            }, { transaction });
-          }
-        }
-      }
-    }
-
-    await transaction.commit();
-
-    // get full data back after update
-    const updatedTest = await BaiKiemTra.findByPk(test_id, {
-      include: [
-        {
-          model: PhanKiemTra,
-          as: "phan_kiem_tra",
-          include: [{ model: CauHoiTracNghiem, as: "cau_hoi_trac_nghiem" }],
-        },
-      ],
-    });
+    const updatedTest = await updateTestService(test_id, ma_giang_vien, payload);
 
     return res.status(200).json({
       success: true,
       message: "Test updated successfully.",
       data: updatedTest,
     });
-
   } catch (error) {
-    if (transaction) await transaction.rollback();
     console.error("Error updating test:", error);
-    return res.status(500).json({
+
+    const status = error.status || 500;
+    const message = error.message || "An unexpected error occurred while updating the test.";
+
+    return res.status(status).json({
       success: false,
-      message: "An unexpected error occurred while updating the test.",
+      message,
       error: error.message,
     });
   }
 };
+
 
 /**
  * Delete test: soft delete and force delete
