@@ -20,14 +20,6 @@ const BaiKiemTra = sequelize.define("BaiKiemTra", {
     type: DataTypes.TEXT,
     allowNull: true,
   },
-  danh_muc: {
-    type: DataTypes.JSON,
-    allowNull: true
-  },
-  so_phan: {
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
   thoi_luong: {
     type: DataTypes.INTEGER,
     allowNull: false,
