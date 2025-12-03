@@ -1,74 +1,56 @@
-// models/CauHoiKiemTra.js
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
-import BaiKiemTra from "./test.model.js";
-import PhanKiemTra from "./test-section.model.js";
 
-const CauHoiKiemTra = sequelize.define("CauHoiKiemTra", {
-  ma_cau_hoi: { // test_question_id
+const CauHoi = sequelize.define("CauHoi", {
+  ma_cau_hoi: {
     type: DataTypes.INTEGER.UNSIGNED,
-    autoIncrement: true,
     primaryKey: true,
-    allowNull: false,
+    autoIncrement: true
   },
-  ma_bai_kiem_tra: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: false,
-    references: {
-      model: BaiKiemTra,
-      key: 'ma_kiem_tra'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  },
-  ma_phan: {
-    type: DataTypes.INTEGER.UNSIGNED,
-    allowNull: true,
-    references: {
-      model: PhanKiemTra,
-      key: 'ma_phan'
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE'
-  },
-  cau_hoi: { // question_text
+  // ma_phan: {
+  //   type: DataTypes.INTEGER.UNSIGNED,
+  //   allowNull: false
+  // },
+  // ma_nguoi_tao: {
+  //   type: DataTypes.INTEGER.UNSIGNED,
+  //   allowNull: false
+  // },
+  tieu_de: {
     type: DataTypes.TEXT,
-    allowNull: false,
+    allowNull: false
   },
-  loai: {
-    type: DataTypes.ENUM("trac_nghiem", "dung_sai", "tra_loi_ngan", "tu_luan"),
-    allowNull: false,
-  },
-  lua_chon: { // options (JSON)
-    type: DataTypes.JSON,
-    allowNull: true,
-  },
-  dap_an_dung: { // correct_answer
-    type: DataTypes.STRING(255),
-    allowNull: true,
-  },
-  giai_thich: {
-    type: DataTypes.TEXT,
-    allowNull: true,
-  },
-  diem: { // points
+  diem: {
     type: DataTypes.INTEGER,
     allowNull: false,
+    default: 0
   },
-  ngay_tao: { // created_at
+  mo_ta: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  do_kho: {
+    type: DataTypes.ENUM("de", "trung_binh", "kho"),
+    defaultValue: "trung_binh"
+  },
+  loai_cau_hoi: {
+    type: DataTypes.ENUM("trac_nghiem", "tu_luan"),
+    allowNull: false
+  },
+  ngay_tao: {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
-  ngay_cap_nhat: { // updated_at
+  ngay_cap_nhat: {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
   },
-}, {
-  tableName: "cau_hoi_kiem_tra",
-  timestamps: false,
-  underscored: true,
-});
+},
+  {
+    tableName: "cau_hoi",
+    timestamps: false
+  }
+);
 
-export default CauHoiKiemTra;
+export default CauHoi;

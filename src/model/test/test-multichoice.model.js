@@ -1,13 +1,10 @@
 // models/CauHoiTracNghiem.js
 import { DataTypes } from "sequelize";
 import { sequelize } from "../../config/database.js";
-import BaiKiemTra from "./test.model.js";
-import PhanKiemTra from "./test-section.model.js";
 
 const CauHoiTracNghiem = sequelize.define("CauHoiTracNghiem", {
-  ma_cau_hoi_trac_nghiem: { // test_question_id
+  ma_cau_hoi_trac_nghiem: { 
     type: DataTypes.INTEGER.UNSIGNED,
-    autoIncrement: true,
     primaryKey: true,
     allowNull: false,
   },

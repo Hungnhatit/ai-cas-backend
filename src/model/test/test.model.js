@@ -28,11 +28,6 @@ const BaiKiemTra = sequelize.define("BaiKiemTra", {
     type: DataTypes.INTEGER,
     allowNull: false,
   },
-  so_lan_lam_toi_da: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    defaultValue: 1,
-  },
   do_kho: {
     type: DataTypes.ENUM("de", "trung_binh", "kho"),
     allowNull: false,
@@ -47,14 +42,6 @@ const BaiKiemTra = sequelize.define("BaiKiemTra", {
     type: DataTypes.ENUM("cong_khai", "lop_hoc", "rieng_tu"),
     allowNull: false,
     defaultValue: "cong_khai",
-  },
-  ngay_bat_dau: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
-  ngay_ket_thuc: {
-    type: DataTypes.DATE,
-    allowNull: true,
   },
   ngay_tao: {
     type: DataTypes.DATE,
