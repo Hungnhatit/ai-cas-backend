@@ -10,6 +10,10 @@ const CauHoiTuLuan = sequelize.define("CauHoiTuLuan", {
     type: DataTypes.TEXT,
     allowNull: true
   },
+  dap_an_mau: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
 },
   {
     tableName: "cau_hoi_tu_luan",
