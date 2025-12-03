@@ -2,8 +2,11 @@ import { sequelize } from "../../config/database.js";
 import LanLamBaiKiemTra from "../../model/test/test-attempt.model.js";
 import LuaChonTracNghiem from "../../model/test/test-multichoice-option.model.js";
 import CauHoiTracNghiem from "../../model/test/test-multichoice.model.js";
+import LuaChonKhaoSat from "../../model/test/test-multiple-select-option.model.js";
+import CauHoiKhaoSat from "../../model/test/test-multiple-select.model.js";
 import CauHoiTuLuan from "../../model/test/test-prompt.model.js";
 import CauHoi from "../../model/test/test-question.model.js";
+import PhanKiemTraCauHoi from "../../model/test/test-section-question.model.js";
 import PhanKiemTra from "../../model/test/test-section.model.js";
 import CauTraLoiHocVien from "../../model/test/test-student-answer.model.js";
 import BaiKiemTra from '../../model/test/test.model.js';
@@ -93,7 +96,7 @@ export const startTestAttempt = async (req, res) => {
     const { test_id, student_id } = req.body;
     const { answers } = req.body;
 
-    console.log(test_id, student_id);
+    // console.log(test_id, student_id);
     if (!test_id || !student_id) {
       return res.status(400).json({
         success: false,
@@ -127,6 +130,8 @@ export const submitTestAnswers = async (req, res) => {
   try {
     const { testAttempt_id } = req.params;
     const { answers } = req.body;
+
+    // console.log("ANSWERS: ", answers);
 
     const attempt = await LanLamBaiKiemTra.findByPk(testAttempt_id);
 
@@ -207,10 +212,31 @@ export const submitTestAttempt = async (req, res) => {
         {
           model: PhanKiemTra, as: 'phan_kiem_tra', include: [
             {
-              model: CauHoi, as: 'cau_hoi', include: [
+              model: PhanKiemTraCauHoi,
+              as: 'phan_kiem_tra_cau_hoi',
+              include: [
                 {
-                  model: CauHoiTracNghiem, as: 'cau_hoi_trac_nghiem', include: [
-                    { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem', attributes: ['ma_lua_chon', 'ma_cau_hoi_trac_nghiem', 'la_dap_an_dung'] }
+                  model: CauHoi,
+                  as: 'cau_hoi',
+                  include: [
+                    {
+                      model: CauHoiTracNghiem,
+                      as: 'cau_hoi_trac_nghiem',
+                      include: [
+                        { model: LuaChonTracNghiem, as: 'lua_chon_trac_nghiem' },
+                      ]
+                    },
+                    {
+                      model: CauHoiTuLuan,
+                      as: 'cau_hoi_tu_luan'
+                    },
+                    {
+                      model: CauHoiKhaoSat,
+                      as: 'cau_hoi_nhieu_lua_chon',
+                      include: [
+                        { model: LuaChonKhaoSat, as: 'lua_chon' }
+                      ]
+                    }
                   ]
                 }
               ]
@@ -220,38 +246,101 @@ export const submitTestAttempt = async (req, res) => {
       ]
     });
 
-
     if (!test) {
       return res.status(404).json({
         message: 'Test not found'
       });
     }
 
-    // convert student answers information into key-value format
     const userAnswers = {};
-    // const questionAnswer = {}
     (attempt.cau_tra_loi_hoc_vien || []).forEach((answer) => {
       userAnswers[answer.ma_cau_hoi] = answer.tra_loi;
     });
 
-
     let totalScore = 0;
     const savePromises = [];
 
+    // console.log('TEST: ', test);
+
     test.phan_kiem_tra.forEach((section) => {
-      section.cau_hoi.forEach((question, index) => {
+      section.phan_kiem_tra_cau_hoi.forEach((sectionQuestion, index) => {
+        const question = sectionQuestion.cau_hoi;
         const userAnswer = userAnswers[question.ma_cau_hoi].toString() || '';
-        const correctChoice = question
-          .cau_hoi_trac_nghiem
-          .lua_chon_trac_nghiem
-          .find(option => option.la_dap_an_dung === 1);
         let score = 0;
 
-        if (correctChoice && userAnswer === correctChoice.ma_lua_chon.toString()) {
-          console.log('true')
-          score = question.diem || 0;
-          totalScore += score;
+        /**
+         * Process single-choice question
+         */
+        if (question.cau_hoi_trac_nghiem) {
+          const correctChoice = question.cau_hoi_trac_nghiem.lua_chon_trac_nghiem.find((option) => option.la_dap_an_dung === 1);
+
+          console.log("USER ANSWER: ", userAnswer, typeof userAnswer);
+          console.log("CORRECT CHOICE: ", correctChoice.ma_lua_chon, typeof correctChoice.ma_lua_chon);          
+
+          if (userAnswer === correctChoice.ma_lua_chon.toString()) {
+            score = question.diem || 0;
+            console.log('SCORE: ', score);
+          }
         }
+
+        /**
+         * Process multiple-select question
+         */
+        if (question.cau_hoi_nhieu_lua_chon) {
+          // Giả định: userAnswer là chuỗi JSON của mảng các ma_lua_chon đã chọn
+          let selectedOptionIds = [];
+          try {
+            selectedOptionIds = JSON.parse(userAnswer);
+          } catch (e) {
+            // console.error("Invalid JSON answer for multiple choice:", userAnswer);
+          }
+
+          const allOptions = question.cau_hoi_nhieu_lua_chon.lua_chon || [];
+          let correctAnswersCount = 0;
+          let incorrectAnswersCount = 0;
+
+          const correctOptions = allOptions.filter(opt => opt.la_dap_an_dung === 1);
+          const totalCorrect = correctOptions.length;
+
+          // Nếu không có câu trả lời nào được chọn thì điểm là 0
+          if (selectedOptionIds.length === 0 && totalCorrect > 0) {
+            score = 0;
+          } else {
+            // Tính điểm cho các lựa chọn đúng được chọn và lựa chọn sai không được chọn
+            correctOptions.forEach(correctOpt => {
+              if (selectedOptionIds.includes(correctOpt.ma_lua_chon)) {
+                correctAnswersCount++;
+              }
+            });
+
+            // Tính số lựa chọn sai mà người dùng chọn (chọn thừa)
+            const incorrectSelected = selectedOptionIds.filter(id => {
+              return !correctOptions.some(opt => opt.ma_lua_chon === id);
+            });
+
+            // Áp dụng công thức tính điểm phức tạp hơn (ví dụ: điểm tương ứng với tỷ lệ đáp án đúng)
+            // Đây là công thức ví dụ: [Số đáp án đúng được chọn] / [Tổng số đáp án đúng] * [Tổng điểm câu hỏi]
+            if (totalCorrect > 0) {
+              score = Math.round((correctAnswersCount / totalCorrect) * question.diem);
+            }
+
+            // Nếu người dùng chọn bất kỳ đáp án sai nào, có thể trừ điểm (tùy theo logic nghiệp vụ)
+            // Hoặc đơn giản: chỉ được điểm nếu tất cả các lựa chọn đúng được chọn VÀ không chọn lựa chọn sai nào.
+            if (incorrectSelected.length > 0 || correctAnswersCount !== totalCorrect) {
+              score = 0; // Nếu chọn sai hoặc thiếu thì 0 điểm (Logic nghiêm ngặt)
+            } else if (correctAnswersCount === totalCorrect && incorrectSelected.length === 0) {
+              score = question.diem || 0; // Full điểm nếu chọn đúng tất cả và không chọn sai
+            } else {
+              score = 0;
+            }
+          }
+        }
+
+        if (question.cau_hoi_tu_luan) {
+          score = 0;
+        }
+
+        totalScore += score;
 
         savePromises.push(
           (async () => {
