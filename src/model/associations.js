@@ -11,24 +11,27 @@ import TienDoNguoiDung from "./quiz/user-progress.model.js"; // user_progress
 import NguoiDung from "./auth/user.model.js";                // user
 import BaiKiemTra from "./test/test.model.js";
 import KetQua from "./quiz/result.model.js";                 // result
-import CauHoi from './quiz/question.model.js';               // question
 import CauTraLoi from './quiz/answer.model.js';              // answer
 import LuaChon from './quiz/option.model.js';                // option
-import BaiTracNghiem from "./quiz/quiz.model.js";            // quiz
-import CauHoiTracNghiem from "./quiz/quiz-question.model.js";// quiz_question
-import LanLamTracNghiem from "./quiz/quiz-attempt.model.js"; // quiz_attempt
 import GiangVien from "./instructor/instructor.model.js";    // instructor
 import HocVien from "./student/student.model.js";            // student
 import GiaoBaiKiemTra from "./quiz/quiz-assignment.model.js";// quiz_assignment
 import BaiTap from "./assignment/assignment.model.js";        // assignment
 import BaiNop from "./assignment/assignment-submission.model.js"; // assignment_submission
 import KetNoiKiemTra from "./test/test-association.js";       // test_association
-import CauHoiKiemTra from "./test/test-question.model.js";
+import CauHoiTracNghiem from "./test/test-multichoice.model.js";
 import LanLamBaiKiemTra from "./test/test-attempt.model.js";
 import DanhMucBaiKiemTra from "./category.model.js";
 import KetQuaAI from "./result/result.model.js";
 import PhanKiemTra from "./test/test-section.model.js";
 import BinhLuanBaiKiemTra from "./test/test-comment.model.js";
+import CauHoi from "./test/test-question.model.js";
+import CauHoiTuLuan from "./test/test-prompt.model.js";
+import LuaChonTracNghiem from "./test/test-multichoice-option.model.js";
+import BaiKiemTraDanhMuc from "./test/test-category.model.js";
+import PhanKiemTraCauHoi from "./test/test-section-question.model.js";
+import CauHoiKhaoSat from "./test/test-multiple-select.model.js";
+import LuaChonKhaoSat from "./test/test-multiple-select-option.model.js";
 
 /**
  * (USERS)
@@ -97,14 +100,14 @@ DuLieuMux.belongsTo(Chuong, { foreignKey: "ma_chuong", as: "chuong" });
 /**
  * BÀI KIỂM TRA (TESTS)
  */
-BaiKiemTra.hasMany(CauHoiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_kiem_tra" });
-CauHoiKiemTra.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" }); // test
+// BaiKiemTra.hasMany(CauHoiTracNghiem, { foreignKey: "ma_bai_kiem_tra", as: "cau_hoi_trac_nghiem" });
+// CauHoiTracNghiem.belongsTo(BaiKiemTra, { foreignKey: "ma_bai_kiem_tra", as: "bai_kiem_tra" }); // test
 
 BaiKiemTra.hasMany(KetQua, { foreignKey: "ma_kiem_tra", as: "ket_qua" });
 KetQua.belongsTo(BaiKiemTra, { foreignKey: "ma_kiem_tra", as: "bai_kiem_tra" });
 
 /**
- * Test attempts
+ * BaiKiemTra - Test Attempt
  */
 BaiKiemTra.hasMany(LanLamBaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'lan_lam_kiem_tra', onDelete: 'CASCADE' });
 LanLamBaiKiemTra.belongsTo(BaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'bai_kiem_tra' });
@@ -125,43 +128,43 @@ CauTraLoi.belongsTo(CauHoi, { foreignKey: "ma_cau_hoi", as: "cau_hoi" });
 KetQua.hasMany(CauTraLoi, { foreignKey: "ma_ket_qua", as: "cau_tra_loi" }); // answers
 CauTraLoi.belongsTo(KetQua, { foreignKey: "ma_ket_qua", as: "ket_qua" });
 
-/**
- * BÀI TRẮC NGHIỆM (QUIZZES)
- */
-BaiTracNghiem.hasMany(CauHoiTracNghiem, {
-  foreignKey: "ma_bai_trac_nghiem",
-  as: "cau_hoi_trac_nghiem",
-  onDelete: "CASCADE",
-});
+// /**
+//  * BÀI TRẮC NGHIỆM (QUIZZES)
+//  */
+// BaiTracNghiem.hasMany(CauHoiTracNghiem, {
+//   foreignKey: "ma_bai_trac_nghiem",
+//   as: "cau_hoi_trac_nghiem",
+//   onDelete: "CASCADE",
+// });
 
-CauHoiTracNghiem.belongsTo(BaiTracNghiem, {
-  foreignKey: "ma_bai_trac_nghiem",
-  as: "bai_trac_nghiem",
-});
+// CauHoiTracNghiem.belongsTo(BaiTracNghiem, {
+//   foreignKey: "ma_bai_trac_nghiem",
+//   as: "bai_trac_nghiem",
+// });
 
-/**
- * LẦN LÀM TRẮC NGHIỆM (ATTEMPTS)
- */
-BaiTracNghiem.hasMany(LanLamTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "lan_lam_trac_nghiem", onDelete: "CASCADE" });
-LanLamTracNghiem.belongsTo(BaiTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "bai_trac_nghiem" });
+// /**
+//  * LẦN LÀM TRẮC NGHIỆM (ATTEMPTS)
+//  */
+// BaiTracNghiem.hasMany(LanLamTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "lan_lam_trac_nghiem", onDelete: "CASCADE" });
+// LanLamTracNghiem.belongsTo(BaiTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "bai_trac_nghiem" });
 
-/**
- * GIẢNG VIÊN - HỌC VIÊN (INSTRUCTOR - STUDENT)
- */
-GiangVien.hasMany(HocVien, { foreignKey: "ma_giang_vien", as: "hoc_vien" }); // ma_giang_vien
-HocVien.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
+// /**
+//  * GIẢNG VIÊN - HỌC VIÊN (INSTRUCTOR - STUDENT)
+//  */
+// GiangVien.hasMany(HocVien, { foreignKey: "ma_giang_vien", as: "hoc_vien" }); // ma_giang_vien
+// HocVien.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
 
-/**
- * GIẢNG VIÊN - BÀI TRẮC NGHIỆM (INSTRUCTOR - QUIZ)
- */
-GiangVien.hasMany(BaiTracNghiem, { foreignKey: "ma_giang_vien", as: "bai_trac_nghiem" });
-BaiTracNghiem.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
+// /**
+//  * GIẢNG VIÊN - BÀI TRẮC NGHIỆM (INSTRUCTOR - QUIZ)
+//  */
+// GiangVien.hasMany(BaiTracNghiem, { foreignKey: "ma_giang_vien", as: "bai_trac_nghiem" });
+// BaiTracNghiem.belongsTo(GiangVien, { foreignKey: "ma_giang_vien", as: "giang_vien" });
 
-/**
- * BÀI TRẮC NGHIỆM - GIAO BÀI KIỂM TRA (QUIZ - QUIZ_ASSIGNMENT)
- */
-BaiTracNghiem.hasMany(GiaoBaiKiemTra, { foreignKey: "ma_bai_trac_nghiem", as: "giao_bai_kiem_tra" });
-GiaoBaiKiemTra.belongsTo(BaiTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "bai_trac_nghiem" });
+// /**
+//  * BÀI TRẮC NGHIỆM - GIAO BÀI KIỂM TRA (QUIZ - QUIZ_ASSIGNMENT)
+//  */
+// BaiTracNghiem.hasMany(GiaoBaiKiemTra, { foreignKey: "ma_bai_trac_nghiem", as: "giao_bai_kiem_tra" });
+// GiaoBaiKiemTra.belongsTo(BaiTracNghiem, { foreignKey: "ma_bai_trac_nghiem", as: "bai_trac_nghiem" });
 
 /**
  * HỌC VIÊN - GIAO BÀI KIỂM TRA (STUDENT - QUIZ_ASSIGNMENT)
@@ -190,8 +193,8 @@ BaiNop.belongsTo(BaiTap, { foreignKey: "ma_bai_tap", as: "bai_tap" });
 /**
  * Category - User
  */
-NguoiDung.hasMany(DanhMucBaiKiemTra, { foreignKey: 'nguoi_tao_danh_muc', as: 'danh_muc_bai_kiem_tra' });
-DanhMucBaiKiemTra.belongsTo(NguoiDung, { foreignKey: 'nguoi_tao_danh_muc', as: 'nguoi_tao' });
+// NguoiDung.hasMany(DanhMucBaiKiemTra, { foreignKey: 'nguoi_tao_danh_muc', as: 'danh_muc_bai_kiem_tra' });
+// DanhMucBaiKiemTra.belongsTo(NguoiDung, { foreignKey: 'nguoi_tao_danh_muc', as: 'nguoi_tao' });
 
 /**
  * BaiKiemTra - GiangVien
@@ -206,30 +209,74 @@ GiangVien.hasMany(BaiKiemTra, { foreignKey: 'ma_giang_vien', as: 'bai_kiem_tra' 
 KetQuaAI.belongsTo(LanLamBaiKiemTra, { foreignKey: "ma_lan_lam", as: "lan_lam_kiem_tra" });
 
 /**
- * BaiKiemTra - PhanKiemTra
+ * BaiKiemTra - PhanKiemTra - CauHoi
  */
-PhanKiemTra.belongsTo(BaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'bai_kiem_tra' });
 BaiKiemTra.hasMany(PhanKiemTra, { foreignKey: 'ma_kiem_tra', as: 'phan_kiem_tra', onDelete: 'CASCADE' });
+PhanKiemTra.belongsTo(BaiKiemTra, { foreignKey: 'ma_kiem_tra', as: 'bai_kiem_tra' });
 
-PhanKiemTra.hasMany(CauHoiKiemTra, {
-  foreignKey: 'ma_phan',
-  as: 'cau_hoi_kiem_tra',
-  onDelete: 'CASCADE'
+// PhanKiemTra.hasMany(CauHoiTracNghiem, {
+//   foreignKey: 'ma_phan',
+//   as: 'cau_hoi_trac_nghiem',
+//   onDelete: 'CASCADE'
+// });
+// CauHoiTracNghiem.belongsTo(PhanKiemTra, {
+//   foreignKey: 'ma_phan',
+//   as: 'phan_kiem_tra'
+// });
+
+// PhanKiemTra ↔ CauHoi
+PhanKiemTra.hasMany(CauHoi, { as: 'cau_hoi', foreignKey: "ma_phan" });
+CauHoi.belongsTo(PhanKiemTra, { as: 'phan_kiem_tra', foreignKey: "ma_phan" });
+
+// CauHoi ↔ CauHoiTracNghiem (1-1)
+CauHoi.hasOne(CauHoiTracNghiem, {
+  as: 'cau_hoi_trac_nghiem',
+  foreignKey: 'ma_cau_hoi_trac_nghiem', // FK trỏ tới cau_hoi.ma_cau_hoi
+  sourceKey: 'ma_cau_hoi'
 });
-CauHoiKiemTra.belongsTo(PhanKiemTra, {
-  foreignKey: 'ma_phan',
-  as: 'phan_kiem_tra'
+CauHoiTracNghiem.belongsTo(CauHoi, {
+  as: 'cau_hoi',
+  foreignKey: 'ma_cau_hoi_trac_nghiem',
+  targetKey: 'ma_cau_hoi'
 });
+
+// CauHoiTracNghiem ↔ LuaChonTracNghiem (1-n)
+CauHoiTracNghiem.hasMany(LuaChonTracNghiem, {
+  as: 'lua_chon_trac_nghiem',
+  foreignKey: 'ma_cau_hoi_trac_nghiem'
+});
+LuaChonTracNghiem.belongsTo(CauHoiTracNghiem, {
+  as: 'cau_hoi_trac_nghiem',
+  foreignKey: 'ma_cau_hoi_trac_nghiem'
+});
+
+// CauHoi ↔ CauHoiTuLuan (1-1)
+CauHoi.hasOne(CauHoiTuLuan, {
+  as: 'cau_hoi_tu_luan',
+  foreignKey: 'ma_cau_hoi_tu_luan', // FK trỏ tới cau_hoi.ma_cau_hoi
+  sourceKey: 'ma_cau_hoi'
+});
+CauHoiTuLuan.belongsTo(CauHoi, {
+  as: 'cau_hoi',
+  foreignKey: 'ma_cau_hoi_tu_luan',
+  targetKey: 'ma_cau_hoi'
+});
+
+
+
+// BaiKiemTra.hasMany(CauHoiTracNghiem, { as: 'cau_hoi_trac_nghiem', foreignKey: "ma_bai_kiem_tra" });
+// CauHoiTracNghiem.belongsTo(BaiKiemTra, { as: 'bai_kiem_tra', foreignKey: "ma_bai_kiem_tra" });
+
+
 
 /**
  * BaiKiemTra - DanhMuc
  */
 BaiKiemTra.belongsToMany(DanhMucBaiKiemTra, {
-  through: 'bai_kiem_tra_danh_muc',
+  through: 'bai_kiem_tra_danh_muc', //many-to-many relationship
   foreignKey: 'ma_kiem_tra',
   otherKey: 'ma_danh_muc',
-  as: 'danh_muc_bai_kiem_tra',
-  timestamps: false,
+  as: 'danh_muc',
 });
 
 // models/DanhMucBaiKiemTra.js
@@ -238,8 +285,54 @@ DanhMucBaiKiemTra.belongsToMany(BaiKiemTra, {
   foreignKey: 'ma_danh_muc',
   otherKey: 'ma_kiem_tra',
   as: 'bai_kiem_tra',
-  timestamps: false,
 });
+
+
+PhanKiemTra.hasMany(PhanKiemTraCauHoi, {
+  as: 'phan_kiem_tra_cau_hoi',
+  foreignKey: 'ma_phan'
+});
+
+CauHoi.hasMany(PhanKiemTraCauHoi, {
+  as: 'phan_kiem_tra_cau_hoi',
+  foreignKey: 'ma_cau_hoi'
+});
+
+PhanKiemTraCauHoi.belongsTo(PhanKiemTra, {
+  as: 'phan_kiem_tra',
+  foreignKey: 'ma_phan'
+});
+
+PhanKiemTraCauHoi.belongsTo(CauHoi, {
+  as: 'cau_hoi',
+  foreignKey: 'ma_cau_hoi'
+});
+
+
+/**
+ * CauHoiKhaoSat - CauHoi - LuaChonKhaoSat
+ */
+CauHoi.hasOne(CauHoiKhaoSat, {
+  as: 'cau_hoi_nhieu_lua_chon',
+  foreignKey: 'ma_cau_hoi',
+  sourceKey: 'ma_cau_hoi'
+});
+
+CauHoiKhaoSat.belongsTo(CauHoi, {
+  as: 'cau_hoi',
+  foreignKey: 'ma_cau_hoi',
+  targetKey: 'ma_cau_hoi'
+});
+
+CauHoiKhaoSat.hasMany(LuaChonKhaoSat, {
+  as: 'lua_chon',
+  foreignKey: 'ma_cau_hoi'
+});
+LuaChonKhaoSat.belongsTo(CauHoiKhaoSat, {
+  as: 'cau_hoi_khao_sat',
+  foreignKey: 'ma_cau_hoi'
+});
+
 
 /**
  * Test - Comment
@@ -299,4 +392,6 @@ export {
   LuaChon,
   KetQua,
   CauTraLoi,
+  PhanKiemTraCauHoi,
+  PhanKiemTra
 };
