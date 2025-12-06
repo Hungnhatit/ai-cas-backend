@@ -22,10 +22,16 @@ export const createComment = async (req, res) => {
       ma_binh_luan_goc: ma_binh_luan_goc || null
     });
 
+    const populatedComment = await BinhLuanBaiKiemTra.findByPk(newComment.ma_binh_luan, {
+      include: [
+        { model: NguoiDung, as: 'nguoi_dung', attributes: ['ma_nguoi_dung', 'ten', 'email'] }
+      ]
+    })
+
     return res.status(201).json({
       success: true,
       message: ma_binh_luan_goc ? "Reply comment created successfully" : "Comment created successfully",
-      data: newComment
+      data: populatedComment
     });
 
   } catch (error) {
