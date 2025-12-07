@@ -47,7 +47,7 @@ const JWT_SECRET_KEY = process.env.JWT_SECRET_KEY || "mysecret";
 
 export const register = async (req, res) => {
   try {
-    const { ten, email, mat_khau, avatar, vai_tro } = req.body;
+    const { ten, email, mat_khau, avatar, so_dien_thoai, vai_tro } = req.body;
     const existingUser = await NguoiDung.findOne({
       where: { email }
     });
@@ -64,6 +64,7 @@ export const register = async (req, res) => {
       ten,
       email,
       vai_tro,
+      so_dien_thoai,
       mat_khau: hashedPasword,
     });
 
@@ -93,6 +94,7 @@ export const register = async (req, res) => {
     )
 
     return res.status(201).json({
+      success: true,
       message: 'User registered successfully!',
       user: newUser,
       token
