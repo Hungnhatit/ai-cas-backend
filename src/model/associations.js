@@ -32,6 +32,11 @@ import BaiKiemTraDanhMuc from "./test/test-category.model.js";
 import PhanKiemTraCauHoi from "./test/test-section-question.model.js";
 import CauHoiKhaoSat from "./test/test-multiple-select.model.js";
 import LuaChonKhaoSat from "./test/test-multiple-select-option.model.js";
+import CauTraLoiHocVien from "./test/test-student-answer.model.js";
+import ChiTietDanhGia from "./competency/review-detail.model.js";
+import KetQuaDanhGia from "./result/results.model.js";
+import TieuChiDanhGia from "./competency/criteria.model.js";
+import PhanTichDanhGia from "./competency/phan_tich-danh_gia.model.js";
 
 /**
  * (USERS)
@@ -368,6 +373,49 @@ NguoiDung.hasMany(BinhLuanBaiKiemTra, {
 BinhLuanBaiKiemTra.belongsTo(BinhLuanBaiKiemTra, {
   as: "binh_luan_cha",
   foreignKey: "ma_binh_luan_goc"
+});
+
+/**
+ * Đánh giá
+ */
+KetQuaDanhGia.hasMany(ChiTietDanhGia, {
+  foreignKey: 'ma_danh_gia',
+  as: 'chi_tiet_danh_gia'
+});
+
+ChiTietDanhGia.belongsTo(KetQuaDanhGia, {
+  foreignKey: 'ma_danh_gia',
+  as: 'ket_qua_danh_gia'
+});
+
+CauHoi.hasOne(ChiTietDanhGia, {
+  foreignKey: 'ma_cau_hoi',
+  as: 'chi_tiet_danh_gia'
+});
+
+ChiTietDanhGia.belongsTo(CauHoi, {
+  foreignKey: 'ma_cau_hoi',
+  as: 'cau_hoi'
+});
+
+ChiTietDanhGia.hasOne(TieuChiDanhGia, {
+  as: 'tieu_chi_danh_gia',
+  foreignKey: 'ma_tieu_chi'
+});
+
+TieuChiDanhGia.belongsTo(ChiTietDanhGia, {
+  as: 'tieu_chi_danh_gia',
+  foreignKey: 'ma_tieu_chi'
+});
+
+KetQuaDanhGia.hasOne(PhanTichDanhGia, {
+  foreignKey: "ma_danh_gia",
+  as: "phan_tich",
+});
+
+PhanTichDanhGia.belongsTo(KetQuaDanhGia, {
+  foreignKey: "ma_danh_gia",
+  as: "ket_qua",
 });
 
 
