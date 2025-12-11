@@ -1,17 +1,20 @@
 // src/model/attachment.model.js
 import { DataTypes } from "sequelize";
 import { sequelize } from "../config/database.js";
-import Course from "./course.model.js";
 
-const Attachment = sequelize.define(
-  "Attachment",
+const DinhKemTaiLieu = sequelize.define(
+  "DinhKemTaiLieu",
   {
     ma_dinh_kem: {
       type: DataTypes.INTEGER.UNSIGNED,
       autoIncrement: true,
       primaryKey: true,
     },
-    ten: {
+    ma_tai_lieu: {
+      type: DataTypes.INTEGER.UNSIGNED,
+      allowNull: true,
+    },
+    ten_tep: {
       type: DataTypes.STRING(255),
       allowNull: true,
     },
@@ -19,39 +22,20 @@ const Attachment = sequelize.define(
       type: DataTypes.TEXT,
       allowNull: true,
     },
-    ma_khoa_hoc: {
-      type: DataTypes.INTEGER.UNSIGNED,
-      references: {
-        model: Course,
-        key: "ma_khoa_hoc",
-      },
-      onDelete: "CASCADE",
+    dung_luong: {
+      type: DataTypes.INTEGER,
     },
+    dinh_dang: {
+      type: DataTypes.TEXT,
+    }
   },
   {
-    tableName: "dinh_kem",
+    tableName: "dinh_kem_tai_lieu",
     timestamps: true,
     createdAt: "ngay_tao",
-    updatedAt: "ngay_cap_nhat",
-    indexes: [
-      {
-        fields: ["ma_khoa_hoc"],
-      },
-    ],
+    updatedAt: "ngay_cap_nhat"
   }
 );
 
-// Associations
-Course.hasMany(Attachment, {
-  foreignKey: "ma_khoa_hoc",
-  as: "dinh_kem",
-  onDelete: "CASCADE",
-});
 
-Attachment.belongsTo(Course, {
-  foreignKey: "ma_khoa_hoc",
-  as: "khoa_hoc",
-  onDelete: "CASCADE",
-});
-
-export default Attachment;
+export default DinhKemTaiLieu;
