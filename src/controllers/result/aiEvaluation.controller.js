@@ -1,4 +1,7 @@
+import PhanTichDanhGia from "../../model/competency/phan_tich-danh_gia.model.js";
+import ChiTietDanhGia from "../../model/competency/review-detail.model.js";
 import KetQuaAI from "../../model/result/result.model.js";
+import KetQuaDanhGia from "../../model/result/results.model.js";
 import { aiEvaluationService } from "../../services/aiEvaluation.service.js";
 
 /**
@@ -28,15 +31,15 @@ export const evaluate = async (req, res) => {
 /**
  * Generate review for prompt test
  */
-export const evaluatePrompt = async(req, res)=> {
+export const evaluatePrompt = async (req, res) => {
 
 }
 
 /**
  * Generate review for situation test
  */
-export const evaluateSituation = async(req, res)=> {
-  
+export const evaluateSituation = async (req, res) => {
+
 }
 
 
@@ -63,6 +66,41 @@ export const getAIResult = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Internal server error'
+    })
+  }
+}
+
+/**
+ * Get result detail by attempt ID
+ */
+export const getReviewByAttemptID = async (req, res) => {
+  try {
+    const { attempt_id } = req.params;
+
+    const result = await KetQuaDanhGia.findOne({
+      where: { ma_lan_lam: attempt_id },
+      include: [
+        { model: ChiTietDanhGia, as: 'chi_tiet_danh_gia' },
+        { model: PhanTichDanhGia, as: 'phan_tich' }
+      ]
+    });
+
+    if (!result) {
+      return res.status(404).json({
+        message: 'Result not found!'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Fetched result successfully!`,
+      data: result
+    })
+
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: `Internal Server Error:  ${error.message}`
     })
   }
 }
