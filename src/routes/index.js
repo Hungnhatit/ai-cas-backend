@@ -13,7 +13,9 @@ import testRoutes from './test.route.js';
 import testAttemptRoutes from './test-attempt.route.js';
 import aiEvaluationRoutes from './aiEvaluation.route.js';
 import userRoutes from './user.route.js'
-import testCommentRoutes from './test-comment.route.js'
+import testCommentRoutes from './test-comment.route.js';
+import competencyRoutes from './competency.route.js';
+import postRoutes from './post.route.js';
 
 const router = express.Router();
 
@@ -30,11 +32,13 @@ router.use('/file', fileRoutes);
 router.use('/ai', aiEvaluationRoutes);
 router.use('/user', userRoutes);
 router.use('/comment', testCommentRoutes);
+router.use('/post', postRoutes);
 /**
  * Test routes
  */
 router.use('/test', testRoutes);
 router.use('/test-attempt', testAttemptRoutes);
+router.use('/competency', competencyRoutes);
 
 
 export default router;
