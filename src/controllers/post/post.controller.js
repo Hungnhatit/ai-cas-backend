@@ -3,6 +3,7 @@ import { uploadMedia } from "../../helpers/cloudinary.js";
 import DinhKemTaiLieu from "../../model/attachment.model.js";
 import BaiViet from "../../model/post/post.model.js";
 import fs from 'fs';
+import NguoiDung from "../../model/user.model.js";
 
 /**
  * Create post
@@ -207,6 +208,67 @@ export const getPostById = async (req, res) => {
 }
 
 /**
+ * Get all posts
+ * Description: 
+ */
+export const getPosts = async (req, res) => {
+  try {
+    let { page = 1, limit = 10, ma_tac_gia, trang_thai, q, sort_by = "ngay_tao", sort_dir = "desc" } = req.query;
+    page = parseInt(page) > 0 ? parseInt(page) : 1;
+    limit = parseInt(limit) > 0 ? Math.min(parseInt(limit), 100) : 10; // cap at 100
+
+    const offset = (page - 1) * limit;
+
+    const where = {};
+    if (ma_tac_gia) where.ma_tac_gia = ma_tac_gia;
+    if (trang_thai) where.trang_thai = trang_thai;
+    if (q) {
+      where[sequelize.Op.or] = [
+        { tieu_de: { [sequelize.Op.like]: `%${q}%` } },
+        { tom_tat: { [sequelize.Op.like]: `%${q}%` } },
+      ];
+    }
+
+    const validSortFields = ["ngay_tao", "ngay_cap_nhat", "tieu_de", "ma_bai_viet"];
+    if (!validSortFields.includes(sort_by)) sort_by = "ngay_tao";
+    sort_dir = sort_dir.toLowerCase() === "asc" ? "ASC" : "DESC";
+
+    const { count, rows } = await BaiViet.findAndCountAll({
+      where,
+      limit,
+      offset,
+      order: [[sort_by, sort_dir]],
+      include: [
+        { model: NguoiDung, as: 'tac_gia' }
+      ]
+    });
+
+    const totalPages = Math.ceil(count / limit);
+
+    return res.status(200).json({
+      success: true,
+      message: "Posts retrieved successfully.",
+      data: {
+        posts: rows,
+        pagination: {
+          total: count,
+          page,
+          limit,
+          totalPages,
+        },
+      },
+    });
+  } catch (err) {
+    console.error("getPosts error:", err);
+    return res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving posts.",
+      errors: [{ message: err.message }],
+    });
+  }
+}
+
+/**
  * Update post
  */
 export const updatePost = async (req, res) => {
@@ -215,7 +277,7 @@ export const updatePost = async (req, res) => {
   console.log("--- DEBUG UPDATE POST ---");
   console.log("Body:", req.body);   // Xem text có qua không
   console.log("Files:", req.files);
-  
+
   const cleanupFiles = (filesObject) => {
     if (!filesObject) return;
     Object.values(filesObject).flat().forEach(file => {
@@ -226,7 +288,7 @@ export const updatePost = async (req, res) => {
   try {
     const id = req.params.id;
     if (!id) {
-      cleanupFiles(req.files); 
+      cleanupFiles(req.files);
       await t.rollback();
       return res.status(400).json({ success: false, message: "Post id is required in URL." });
     }
@@ -238,7 +300,7 @@ export const updatePost = async (req, res) => {
       return res.status(404).json({ success: false, message: `Post with id ${id} not found.` });
     }
 
-    
+
     const updatableFields = ["ma_tac_gia", "tieu_de", "tom_tat", "noi_dung", "trang_thai"];
     const payload = {};
     updatableFields.forEach((f) => {
@@ -247,20 +309,20 @@ export const updatePost = async (req, res) => {
       }
     });
 
-    
+
     if (payload.tieu_de && String(payload.tieu_de).trim() === "") {
       cleanupFiles(req.files);
       await t.rollback();
       return res.status(400).json({ success: false, message: "Title (tieu_de) cannot be empty." });
     }
-   
+
     if (req.files && req.files['anh_bia']) {
       try {
-        const fileAnhBia = req.files['anh_bia'][0];        
+        const fileAnhBia = req.files['anh_bia'][0];
         const uploadResult = await uploadMedia(fileAnhBia.path);
-        
+
         payload.anh_bia = uploadResult.secure_url;
-        
+
         if (fs.existsSync(fileAnhBia.path)) fs.unlinkSync(fileAnhBia.path);
       } catch (err) {
         console.error("Lỗi upload ảnh bìa khi update:", err);
@@ -269,7 +331,7 @@ export const updatePost = async (req, res) => {
         return res.status(500).json({ success: false, message: "Lỗi upload ảnh bìa (Cloudinary)." });
       }
     }
-    
+
     if (Object.keys(payload).length === 0) {
       await t.rollback();
       return res.status(400).json({ success: false, message: "No updatable fields provided." });
