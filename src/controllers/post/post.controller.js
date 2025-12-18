@@ -184,7 +184,13 @@ export const getPostById = async (req, res) => {
       message: "Post ID is required in URL."
     });
 
-    const post = await BaiViet.findByPk(post_id);
+    const post = await BaiViet.findOne({
+      where: { ma_bai_viet: post_id },
+      include: [
+        { model: NguoiDung, as: 'tac_gia' }
+      ]
+
+    });
     if (!post) {
       return res.status(404).json({
         success: false,
