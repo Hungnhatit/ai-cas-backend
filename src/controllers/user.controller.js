@@ -1,5 +1,7 @@
 import NguoiDung from "../model/auth/user.model.js"
 import bcrypt from 'bcrypt';
+import fs from 'fs';
+import { uploadMedia } from "../helpers/cloudinary.js";
 
 /**
  * Get all users
@@ -61,8 +63,8 @@ export const getUserById = async (req, res) => {
       })
     }
 
-    return res.status(400).json({
-      sucess: true,
+    return res.status(200).json({
+      success: true,
       message: 'User found successfully',
       data: user
     });
@@ -86,6 +88,9 @@ export const updateUser = async (req, res) => {
     const user = await NguoiDung.findByPk(user_id);
 
     if (!user) {
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
       return res.status(404).json({
         success: false,
         message: `User with ID=${user_id} not found`
@@ -96,12 +101,36 @@ export const updateUser = async (req, res) => {
       user.mat_khau = await bcrypt.hash(mat_khau, 10);
     }
 
+    let anh_dai_dien_url = user.anh_dai_dien;
+
+    if (req.file) {
+      try {
+        const uploadResult = await uploadMedia(req.file.path);
+        anh_dai_dien_url = uploadResult.secure_url;
+
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (uploadError) {
+        console.error("Error uploading avatar:", uploadError);
+
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        return res.status(500).json({
+          success: false,
+          message: "Error uploading avatar image."
+        });
+      }
+    }
+
     await user.update({
       ten: ten || user.ten,
       email: email || user.email,
       so_dien_thoai: so_dien_thoai || user.so_dien_thoai,
       vai_tro: vai_tro || user.vai_tro,
       trang_thai: trang_thai || user.trang_thai,
+      anh_dai_dien: anh_dai_dien_url
     });
 
     return res.status(200).json({
