@@ -2,9 +2,13 @@ import NguoiDung from "../model/auth/user.model.js"
 import bcrypt from 'bcrypt';
 import fs from 'fs';
 import { uploadMedia } from "../helpers/cloudinary.js";
+import Student from "../model/student/student.model.js";
+import GiangVien from "../model/instructor/instructor.model.js";
+import { sequelize } from "../config/database.js";
 
 /**
  * Get all users
+ * Description: retrieve a list of users
  */
 export const getUsers = async (req, res) => {
   try {
@@ -49,6 +53,7 @@ export const getUsers = async (req, res) => {
 
 /**
  * Get specific user
+ * Description: retrieve user details by ID
  */
 export const getUserById = async (req, res) => {
   const { user_id } = req.params;
@@ -80,66 +85,95 @@ export const getUserById = async (req, res) => {
 
 /**
  * Update user
+ * Description: update user information
  */
 export const updateUser = async (req, res) => {
+  const t = await sequelize.transaction();
+
   try {
     const { user_id } = req.params;
-    const { ten, email, mat_khau, so_dien_thoai, vai_tro, trang_thai } = req.body;
-    const user = await NguoiDung.findByPk(user_id);
+    const { ten, email, mat_khau, so_dien_thoai, vai_tro, trang_thai, tieu_su, truong } = req.body;
+    const userCommon = await NguoiDung.findByPk(user_id);
 
-    if (!user) {
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+    if (!userCommon) {
+      if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+      await t.rollback();
       return res.status(404).json({
         success: false,
         message: `User with ID=${user_id} not found`
       });
     }
 
-    if (mat_khau) {
-      user.mat_khau = await bcrypt.hash(mat_khau, 10);
+    const role = userCommon.vai_tro;
+    let userSpecific = null;
+    let isInstructor = false;
+
+    if (role === "instructor" || role === "giang_vien") {
+      isInstructor = true;
+      userSpecific = await GiangVien.findOne({ where: { ma_giang_vien: user_id } });
+    } else {
+      userSpecific = await Student.findOne({ where: { ma_hoc_vien: user_id } });
     }
 
-    let anh_dai_dien_url = user.anh_dai_dien;
+    let anh_dai_dien_url = userSpecific ? userSpecific.anh_dai_dien : null;
 
     if (req.file) {
       try {
         const uploadResult = await uploadMedia(req.file.path);
         anh_dai_dien_url = uploadResult.secure_url;
-
-        if (fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
       } catch (uploadError) {
-        console.error("Error uploading avatar:", uploadError);
-
-        if (fs.existsSync(req.file.path)) {
-          fs.unlinkSync(req.file.path);
-        }
-        return res.status(500).json({
-          success: false,
-          message: "Error uploading avatar image."
-        });
+        if (fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+        await t.rollback();
+        return res.status(500).json({ success: false, message: "Error uploading avatar." });
       }
     }
 
-    await user.update({
-      ten: ten || user.ten,
-      email: email || user.email,
-      so_dien_thoai: so_dien_thoai || user.so_dien_thoai,
-      vai_tro: vai_tro || user.vai_tro,
-      trang_thai: trang_thai || user.trang_thai,
-      anh_dai_dien: anh_dai_dien_url
+    let hashedPassword = userCommon.mat_khau;
+    if (mat_khau) {
+      hashedPassword = await bcrypt.hash(mat_khau, 10);
+    }
+
+    await userCommon.update({
+      ten: ten || userCommon.ten,
+      email: email || userCommon.email,
+      so_dien_thoai: so_dien_thoai || userCommon.so_dien_thoai,
+      mat_khau: hashedPassword,
+      trang_thai: trang_thai || userCommon.trang_thai,
+      ngay_cap_nhat: new Date()
     });
+
+    if (userSpecific) {
+      if (isInstructor) {
+        await userSpecific.update({
+          anh_dai_dien: anh_dai_dien_url,
+          tieu_su: tieu_su || userSpecific.tieu_su,
+          truong: truong || userSpecific.truong,
+        }, { transaction: t });
+      } else {
+        await userSpecific.update({
+          anh_dai_dien: anh_dai_dien_url,
+        }, { transaction: t });
+      }
+    } else {
+      console.warn(`Specific profile not found for user_id ${user_id} with role ${role}`);
+    }
+
+    await t.commit();
+
+    const updatedUser = {
+      ...userCommon.toJSON(),
+      ...(userSpecific ? userSpecific.toJSON() : {})
+    };
 
     return res.status(200).json({
       success: true,
       message: "User updated successfully.",
-      data: user,
+      data: updatedUser,
     });
 
   } catch (error) {
+    await t.rollback();
     console.error("Error updating user:", error);
     res.status(500).json({
       success: false,
@@ -151,6 +185,7 @@ export const updateUser = async (req, res) => {
 
 /**
  * Soft delete user (mark as inactive)
+ * Description: 
  */
 export const softDeleteUser = async (req, res) => {
   try {

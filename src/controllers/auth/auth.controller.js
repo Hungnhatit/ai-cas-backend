@@ -142,7 +142,8 @@ export const login = async (req, res) => {
         ma_nguoi_dung: user.ma_nguoi_dung,
         ten: user.ten,
         email: user.email,
-        vai_tro: user.vai_tro
+        vai_tro: user.vai_tro,
+        anh_dai_dien: user.anh_dai_dien
       }
     });
   } catch (err) {
