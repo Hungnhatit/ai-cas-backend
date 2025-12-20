@@ -37,6 +37,7 @@ import ChiTietDanhGia from "./competency/review-detail.model.js";
 import KetQuaDanhGia from "./result/results.model.js";
 import TieuChiDanhGia from "./competency/criteria.model.js";
 import PhanTichDanhGia from "./competency/phan_tich-danh_gia.model.js";
+import BaiViet from "./post/post.model.js";
 
 /**
  * (USERS)
@@ -417,6 +418,15 @@ PhanTichDanhGia.belongsTo(KetQuaDanhGia, {
   foreignKey: "ma_danh_gia",
   as: "ket_qua",
 });
+
+NguoiDung.hasMany(BaiViet, {
+  foreignKey: 'ma_tac_gia',
+  as: 'bai_viet'
+});
+BaiViet.belongsTo(NguoiDung, {
+  foreignKey: 'ma_tac_gia',
+  as: 'tac_gia'
+})
 
 
 /**
