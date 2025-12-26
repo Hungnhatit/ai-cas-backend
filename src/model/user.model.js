@@ -42,6 +42,14 @@ const NguoiDung = sequelize.define('NguoiDung', {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW
+  },
+  token_khoi_phuc_mat_khau: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  han_dat_mat_khau: {
+    type: DataTypes.DATE, 
+    allowNull: true
   }
 },
   {

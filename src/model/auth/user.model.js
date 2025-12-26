@@ -23,9 +23,21 @@ const NguoiDung = sequelize.define("NguoiDung", {
     type: DataTypes.STRING,
     allowNull: true,
   },
+  anh_dai_dien: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
   vai_tro: {                    // role
     type: DataTypes.STRING,
     allowNull: false,
+  },
+  token_khoi_phuc_mat_khau: {
+    type: DataTypes.STRING,
+    allowNull: true
+  },
+  han_dat_mat_khau: {
+    type: DataTypes.DATE,
+    allowNull: true
   },
   trang_thai: {
     type: DataTypes.ENUM("dang_hoat_dong", "ngung_hoat_dong"),
