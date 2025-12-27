@@ -4,6 +4,7 @@ import DinhKemTaiLieu from "../../model/attachment.model.js";
 import BaiViet from "../../model/post/post.model.js";
 import fs from 'fs';
 import NguoiDung from "../../model/user.model.js";
+import { Op } from "sequelize";
 
 /**
  * Create post
@@ -270,6 +271,36 @@ export const getPosts = async (req, res) => {
       success: false,
       message: "An error occurred while retrieving posts.",
       errors: [{ message: err.message }],
+    });
+  }
+}
+
+/**
+ * Get related post
+ */
+export const getRelatedPosts = async (req, res) => {
+  try {
+    const { post_id } = req.params;
+
+    const posts = await BaiViet.findAll({
+      where: {
+        ma_bai_viet: { [Op.ne]: post_id }
+      },
+      limit: 8,
+      order: [['ngay_tao', 'DESC']],
+      attributes: ['ma_bai_viet', 'tieu_de', 'tom_tat', 'anh_bia', 'ngay_tao']
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Fetched posts successfully',
+      data: posts,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 }
