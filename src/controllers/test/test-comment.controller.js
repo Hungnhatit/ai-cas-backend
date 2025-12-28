@@ -55,7 +55,7 @@ export const getCommentsByTestId = async (req, res) => {
         {
           model: NguoiDung,
           as: "nguoi_dung",
-          attributes: ["ma_nguoi_dung", "ten", "email"]
+          attributes: ["ma_nguoi_dung", "ten", "email", "anh_dai_dien"]
         },
         {
           model: BinhLuanBaiKiemTra,
