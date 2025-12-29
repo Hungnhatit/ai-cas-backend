@@ -15,7 +15,6 @@ export const authenticate = (req, res, next) => {
   }
 };
 
-// check quyền cụ thể
 export const authorize = (roles = []) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.type)) {
@@ -41,7 +40,7 @@ export const authMiddleware = (req, res, next) => {
   try {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log("Decoded JWT:", decoded); 
+    console.log("Decoded JWT:", decoded);
     // Gắn thông tin user vào request
     req.user = decoded;
 
@@ -51,3 +50,28 @@ export const authMiddleware = (req, res, next) => {
     return res.status(403).json({ message: "Invalid or expired token" });
   }
 };
+
+export const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({
+      success: false,
+      message: 'Token not found'
+    });
+  }
+
+  jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+    if (err) {
+      return res.status(401).json({
+        success: false,
+        message: 'The login session has expired or the token is invalid'
+      })
+    }
+    req.user = user;
+    next();
+  });
+
+
+}

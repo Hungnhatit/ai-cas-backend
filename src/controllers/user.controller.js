@@ -140,7 +140,9 @@ export const updateUser = async (req, res) => {
       so_dien_thoai: so_dien_thoai || userCommon.so_dien_thoai,
       mat_khau: hashedPassword,
       trang_thai: trang_thai || userCommon.trang_thai,
-      ngay_cap_nhat: new Date()
+      ngay_cap_nhat: new Date(),
+      anh_dai_dien: anh_dai_dien_url || userCommon.anh_dai_dien,
+      tieu_su: tieu_su || userCommon.tieu_su
     });
 
     if (userSpecific) {
